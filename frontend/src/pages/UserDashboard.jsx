@@ -22,6 +22,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 
+import CloseIcon from "@mui/icons-material/Close";
+
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 // import UserNav from "./UserNav";
@@ -87,7 +89,6 @@ export default function UserDashboard() {
   const [uploadedImages, setUploadedImages] = useState({ 1: null, 2: null });
 
   const handleFileUpload = async (event) => {
-
     if (tab === 0) return;
     const file = event.target.files[0];
     if (!file) return;
@@ -103,22 +104,32 @@ export default function UserDashboard() {
       const response = await axios.post(
         `http://localhost:5000/api/upload/image?folder=${folderName}`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
 
       setUploadStatus((prev) => ({ ...prev, [tab]: "Upload Successful! 🎉" }));
       setUploadedFilePath(response.data.localPath);
-      
+
       // Image Preview Set Karna
-      setUploadedImages((prev) => ({ ...prev, [tab]: URL.createObjectURL(file) }));
+      setUploadedImages((prev) => ({
+        ...prev,
+        [tab]: URL.createObjectURL(file),
+      }));
 
       console.log(`Saved at ${folderName}:`, response.data.localPath);
     } catch (error) {
       console.error("Upload Error:", error);
       setUploadStatus((prev) => ({ ...prev, [tab]: "Upload failed! ❌" }));
     } finally {
-      event.target.value = null; 
+      event.target.value = null;
     }
+  };
+
+  // 👈 NAYA LOGIC: Image remove karne ke liye
+  const handleRemoveImage = (e, currentTab) => {
+    e.stopPropagation(); // Isse file input dubara trigger nahi hoga
+    setUploadedImages((prev) => ({ ...prev, [currentTab]: null }));
+    setUploadStatus((prev) => ({ ...prev, [currentTab]: "" }));
   };
   // --- NAYA CODE END ---
 
@@ -375,14 +386,28 @@ export default function UserDashboard() {
                     }}
                   >
                     {uploadedImages[1] ? (
-                      <img src={uploadedImages[1]} alt="Video Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img
+                        src={uploadedImages[1]}
+                        alt="Video Ref"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
                     ) : (
                       <>
                         <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
                         <Typography fontWeight={700}>
-                          {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
+                          {uploadStatus[1]
+                            ? uploadStatus[1]
+                            : "DROP OR CLICK TO UPLOAD"}
                         </Typography>
-                        {!uploadStatus[1] && <Typography variant="body2">JPG, PNG, WEBP, HEIC — max 10MB</Typography>}
+                        {!uploadStatus[1] && (
+                          <Typography variant="body2">
+                            JPG, PNG, WEBP, HEIC — max 10MB
+                          </Typography>
+                        )}
                       </>
                     )}
                   </Box>
@@ -763,11 +788,15 @@ export default function UserDashboard() {
                     Reference Image *
                   </Typography>
 
+                  {/* 👈 TAB 2 UPLOAD BOX UPDATE */}
                   <Box
-                    onClick={() => fileInputRef.current.click()}
+                    onClick={() =>
+                      !uploadedImages[2] && fileInputRef.current.click()
+                    }
                     sx={{
+                      position: "relative",
                       border: uploadedImages[2] ? "none" : "2px dashed #d6d6d6",
-                      cursor: "pointer",
+                      cursor: uploadedImages[2] ? "default" : "pointer",
                       borderRadius: "30px",
                       height: "360px",
                       display: "flex",
@@ -776,25 +805,80 @@ export default function UserDashboard() {
                       flexDirection: "column",
                       color: secondaryText,
                       width: "100%",
-                      overflow: "hidden", // Full box me preview ke liye
+                      overflow: "hidden",
                     }}
                   >
                     {uploadedImages[2] ? (
-                       <img src={uploadedImages[2]} alt="Theme Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <>
+                        <img
+                          src={uploadedImages[2]}
+                          alt="Theme Ref"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <Box
+                          onClick={(e) => handleRemoveImage(e, 2)}
+                          sx={{
+                            position: "absolute",
+                            top: 15,
+                            right: 15,
+                            bgcolor: "black",
+                            color: "white",
+                            borderRadius: "50%",
+                            width: 32,
+                            height: 32,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            zIndex: 10,
+                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                          }}
+                        >
+                          <CloseIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                      </>
                     ) : (
                       <>
-                        <Box sx={{ width: 100, height: 100, bgcolor: "rgba(198,255,0,0.15)", borderRadius: "30px", display: "flex", justifyContent: "center", alignItems: "center", mb: 4 }}>
-                          <CloudUploadRoundedIcon sx={{ fontSize: 50, color: "#7cb518" }} />
+                        <Box
+                          sx={{
+                            width: 100,
+                            height: 100,
+                            bgcolor: "rgba(198,255,0,0.15)",
+                            borderRadius: "30px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            mb: 4,
+                          }}
+                        >
+                          <CloudUploadRoundedIcon
+                            sx={{ fontSize: 50, color: "#7cb518" }}
+                          />
                         </Box>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: textColor, mb: 2 }}>
-                          {uploadStatus[2] ? uploadStatus[2] : "Drop your reference here"}
+                        <Typography
+                          variant="h4"
+                          fontWeight={700}
+                          sx={{ color: textColor, mb: 2 }}
+                        >
+                          {uploadStatus[2]
+                            ? uploadStatus[2]
+                            : "Drop your reference here"}
                         </Typography>
-                        <Typography sx={{ color: textColor, textAlign: "center" }}>
-                          Supports JPG, PNG, WEBP & HEIC<br />(Max size 16MB)
+                        <Typography
+                          sx={{ color: textColor, textAlign: "center" }}
+                        >
+                          Supports JPG, PNG, WEBP & HEIC
+                          <br />
+                          (Max size 16MB)
                         </Typography>
                       </>
                     )}
                   </Box>
+
                   <Button
                     // fullWidth
                     variant="contained"
