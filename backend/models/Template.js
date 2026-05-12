@@ -6,19 +6,19 @@ const TemplateSchema = new mongoose.Schema(
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TemplateCategory",
-      required: true,
+      // required: true,
       index: true,
     },
 
     categoryName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     categorySlug: {
       type: String,
-      required: true,
+      // required: true,
       lowercase: true,
       trim: true,
       index: true,
@@ -28,19 +28,19 @@ const TemplateSchema = new mongoose.Schema(
     subcategoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TemplateSubCategory",
-      required: true,
+      // required: true,
       index: true,
     },
 
     subcategoryName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     subcategorySlug: {
       type: String,
-      required: true,
+      // required: true,
       lowercase: true,
       trim: true,
       index: true,
@@ -49,13 +49,13 @@ const TemplateSchema = new mongoose.Schema(
     // ───────────── File Info ─────────────
     fileName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     imageUrl: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 

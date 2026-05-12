@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes.js";
 import templateRoutes from "./routes/templateRoutes.js";
 import templateCategoryRoutes from "./routes/templateCategoryRoutes.js";
 import subCategoryRoutes from "./routes/subCategoryRoutes.js";
+import pricingRoutes from "./routes/pricingRoutes.js";
 
 const app = express();
 app.use(cors());
@@ -28,6 +29,7 @@ app.use(
   }),
 );
 connectDB();
+app.use("/api/pricing", pricingRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/templates", templateRoutes);

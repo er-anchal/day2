@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import Pricing from "../models/Pricing.js";
 
 // POST /api/auth/register
 export const registerUser = async (req, res) => {
@@ -56,6 +57,22 @@ export const registerUser = async (req, res) => {
       password,
     });
 
+    const pricingData = await Pricing.create({
+      userId: user._id,
+      name: user.name,
+      planName: "FREE",
+      type: "free",
+      imageCredits: {
+        allocated: 100, 
+        used: 0,
+      },
+      videoCredits: {
+        allocated: 5,
+        used: 0,
+      },
+      isActive: 1,
+    });
+
     // 4️⃣ Generate JWT
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -71,6 +88,12 @@ export const registerUser = async (req, res) => {
         phone: user.phone,
         email: user.email,
         plan: user.plan,
+      },
+      pricing: {
+        planName: pricingData.planName,
+        imageCredits: pricingData.imageCredits,
+        videoCredits: pricingData.videoCredits,
+        isActive: pricingData.isActive,
       },
     });
   } catch (error) {

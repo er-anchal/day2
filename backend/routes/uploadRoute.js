@@ -15,7 +15,7 @@ router.post('/image', upload.single('imageFile'), (req, res) => {
             success: true,
             message: 'Image successfully saved!',
             filePath: fileUrl,
-            localPath: req.file.path // Video generation (FFmpeg) ke liye ye server ka direct path use hoga
+            localPath: req.file.path 
         });
 
     } catch (error) {

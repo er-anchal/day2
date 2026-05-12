@@ -6,7 +6,7 @@ import { useThemeContext } from "./context/ThemeContext";
 
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-// import Profile from "./pages/Profile";
+import Profile from "./pages/Profile";
 import Home from "./pages/Home";
 // import Editor from "./pages/Editor"/;
 import AdminRoute from "./pages/auth/AdminRoute";
@@ -87,7 +87,7 @@ function App() {
           {/* <Route path="/my-designs" element={<UserDesigns />} /> */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* <Route path="/profile" element={<Profile />} /> */}
+          <Route path="/profile" element={<Profile />} /> 
           {/* 
           <Route
             path="/editor/:templateId"

@@ -148,6 +148,8 @@ const Profile = () => {
     },
   ];
 
+const [pricing, setPricing] = useState(null);
+
   // Final sidebar items
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
   useEffect(() => {
@@ -174,6 +176,24 @@ const Profile = () => {
 
     fetchProfile();
   }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return; 
+
+    const fetchPricing = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/pricing/my-plan`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPricing(res.data);
+      } catch (err) {
+        console.error("Pricing fetch failed", err);
+      }
+    };
+
+    fetchPricing();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -335,6 +355,35 @@ const Profile = () => {
         <Typography sx={{ mb: 3 }}>
           <strong>Plan:</strong> {user.plan || "Free"}
         </Typography>
+
+        {/* SUBSCRIPTION & CREDITS SECTION */}
+<Divider sx={{ my: 3 }} />
+<Typography variant="h6" fontWeight={700} mb={2}>
+  Subscription & Usage
+</Typography>
+
+<Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+  <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
+    <Typography variant="body2" color="text.secondary">Image Credits</Typography>
+    <Typography variant="h5" fontWeight={700} color="primary">
+      {pricing ? `${pricing.imageCredits.used} / ${pricing.imageCredits.allocated}` : "0 / 0"}
+    </Typography>
+  </Paper>
+
+  <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
+    <Typography variant="body2" color="text.secondary">Video Credits</Typography>
+    <Typography variant="h5" fontWeight={700} color="secondary">
+      {pricing ? `${pricing.videoCredits.used} / ${pricing.videoCredits.allocated}` : "0 / 0"}
+    </Typography>
+  </Paper>
+</Box>
+
+{pricing && (
+  <Typography sx={{ mt: 2, fontSize: "0.9rem", color: "gray" }}>
+    <strong>Current Plan:</strong> {pricing.planName} ({pricing.type}) <br />
+    <strong>Status:</strong> {pricing.isActive === 1 ? "Active" : "Inactive"}
+  </Typography>
+)}
 
         {/* ACTION BUTTONS */}
         <Stack direction="row" spacing={2}>
