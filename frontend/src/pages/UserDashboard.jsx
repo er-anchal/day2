@@ -371,7 +371,9 @@ export default function UserDashboard() {
 
                   {/* 👈 TAB 1 UPLOAD BOX UPDATE */}
                   <Box
-                    onClick={() => !uploadedImages[1] && fileInputRef.current.click()}
+                    onClick={() =>
+                      !uploadedImages[1] && fileInputRef.current.click()
+                    }
                     sx={{
                       position: "relative",
                       border: uploadedImages[1] ? "none" : "2px dashed #d6d6d6",
@@ -383,14 +385,24 @@ export default function UserDashboard() {
                       flexDirection: "column",
                       color: textColor,
                       cursor: uploadedImages[1] ? "default" : "pointer",
-                      "&:hover": { borderColor: uploadedImages[1] ? "none" : "#c6ff00" },
+                      "&:hover": {
+                        borderColor: uploadedImages[1] ? "none" : "#c6ff00",
+                      },
                       mb: 3,
                       overflow: "hidden",
                     }}
                   >
                     {uploadedImages[1] ? (
                       <>
-                        <img src={uploadedImages[1]} alt="Video Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={uploadedImages[1]}
+                          alt="Video Ref"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
                         <Box
                           onClick={(e) => handleRemoveImage(e, 1)}
                           sx={{
@@ -407,7 +419,7 @@ export default function UserDashboard() {
                             justifyContent: "center",
                             cursor: "pointer",
                             zIndex: 10,
-                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" }
+                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
                           }}
                         >
                           <CloseIcon sx={{ fontSize: 18 }} />
@@ -417,9 +429,15 @@ export default function UserDashboard() {
                       <>
                         <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
                         <Typography fontWeight={700}>
-                          {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
+                          {uploadStatus[1]
+                            ? uploadStatus[1]
+                            : "DROP OR CLICK TO UPLOAD"}
                         </Typography>
-                        {!uploadStatus[1] && <Typography variant="body2">JPG, PNG, WEBP, HEIC — max 10MB</Typography>}
+                        {!uploadStatus[1] && (
+                          <Typography variant="body2">
+                            JPG, PNG, WEBP, HEIC — max 10MB
+                          </Typography>
+                        )}
                       </>
                     )}
                   </Box>
@@ -707,11 +725,13 @@ export default function UserDashboard() {
                     {/* FIRST SELECT */}
 
                     <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ color: textColor, mb: 1, fontWeight: 700 }}>
+                      <Typography
+                        sx={{ color: textColor, mb: 1, fontWeight: 700 }}
+                      >
                         MAIN CATEGORY
                       </Typography>
                       <Select
-                        defaultValue="Jewellery"
+                        defaultValue=""
                         displayEmpty
                         sx={{
                           width: "100%",
@@ -730,17 +750,25 @@ export default function UserDashboard() {
                           },
                         }}
                       >
-                        <MenuItem value="jewellery">Jewellery</MenuItem>
+                        <MenuItem value="" disabled>
+                          Main Category
+                        </MenuItem>
+                        <MenuItem value="jewellery">
+                          Jewellery
+                        </MenuItem>
                       </Select>
                     </Box>
 
                     {/* SUB CATEGORY */}
                     <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ color: textColor, mb: 1, fontWeight: 700 }}>
+                      <Typography
+                        sx={{ color: textColor, mb: 1, fontWeight: 700 }}
+                      >
                         SUB CATEGORY
                       </Typography>
                       <Select
-                        defaultValue="Select Category"
+                        defaultValue=""
+                        displayEmpty
                         sx={{
                           width: "100%",
                           height: "45px",
@@ -758,6 +786,9 @@ export default function UserDashboard() {
                           },
                         }}
                       >
+                        <MenuItem value="" disabled>
+                          Sub Category
+                        </MenuItem>
                         <MenuItem value="rings">Rings</MenuItem>
                         <MenuItem value="necklaces">Pendant</MenuItem>
                         <MenuItem value="earrings">Bangles</MenuItem>
