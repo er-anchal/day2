@@ -46,6 +46,16 @@ export default function UserDashboard() {
     borderColor,
     secondaryText,
   } = useThemeContext();
+  
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("");
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const TEMP_URL = "http://localhost:5000";
+
   const handleProfileClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -55,33 +65,38 @@ export default function UserDashboard() {
   };
 
   const open = Boolean(anchorEl);
-  useEffect(() => {
+ useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
-    // NOT LOGGED IN
-    if (!token) {
-      navigate("/login");
-      return;
+    if (!token) { navigate("/login"); return; }
+    if (role === "ADMIN") { navigate("/admin"); return; }
+
+    // Fetch Videos and Categories jab Video Tab open ho
+    if (tab === 1) {
+      const fetchTemplateData = async () => {
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          const [catRes, subCatRes, tempRes] = await Promise.all([
+            axios.get(`${API_URL}/template-categories`, { headers }),
+            axios.get(`${API_URL}/template-subcategories`, { headers }), 
+            axios.get(`${API_URL}/templates`, { headers }) 
+          ]);
+
+          setCategories(catRes.data.data || catRes.data); 
+          setSubCategories(subCatRes.data.data || subCatRes.data);
+          setTemplates(tempRes.data.data || tempRes.data);
+
+          // Pheli category (Jewellery) ko by default select karna
+          const cats = catRes.data.data || catRes.data;
+          if (cats.length > 0) setSelectedCategoryId(cats[0]._id);
+        } catch (error) {
+          console.error("Failed to fetch template data:", error);
+        }
+      };
+      fetchTemplateData();
     }
-
-    // ADMIN
-    if (role === "ADMIN") {
-      navigate("/admin");
-      return;
-    }
-  }, [navigate]);
-  const handleCreateReel = () => {
-    navigate("/create-reel");
-  };
-
-  const handleHistory = () => {
-    navigate("/history");
-  };
-
-  const handleCatalogue = () => {
-    navigate("/catalogue");
-  };
+  }, [navigate, tab, API_URL]);
 
   // --- NAYA CODE START ---
   const fileInputRef = useRef(null);
@@ -591,85 +606,92 @@ export default function UserDashboard() {
               </Grid>
 
               {/* RIGHT PANEL */}
-
+{/* 🚀 DYNAMIC RIGHT PANEL (VIDEO TEMPLATES) 🚀 */}
               <Grid item xs={12} md={7}>
-                <Box
-                  sx={{
-                    p: 3,
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      color: textColor,
-                      fontWeight: 700,
-                      mb: 3,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    VIDEO TEMPLATES
-                  </Typography>
+                <Box sx={{ p: 3 }}>
+                  <Typography sx={{ color: textColor, fontWeight: 700, mb: 3, letterSpacing: 1 }}>VIDEO TEMPLATES</Typography>
 
-                  {/* CATEGORY */}
-
-                  <Stack direction="row" spacing={2} mb={3}>
-                    <Button
-                      variant="outlined"
-                      sx={{
-                        borderColor: "#c6ff00",
-                        color: "#7cb518",
-                        borderRadius: "14px",
-                      }}
-                    >
-                      Jewellery
-                    </Button>
-
-                    <Button
-                      variant="outlined"
-                      sx={{
-                        borderColor: borderColor,
-                        color: textColor,
-                        borderRadius: "14px",
-                      }}
-                    >
-                      Fashion
-                    </Button>
+                  {/* 1. DYNAMIC MAIN CATEGORIES */}
+                  <Stack direction="row" spacing={2} mb={2} sx={{ overflowX: "auto" }}>
+                    {categories.map((cat) => (
+                      <Button
+                        key={cat._id}
+                        variant="outlined"
+                        onClick={() => { setSelectedCategoryId(cat._id); setSelectedSubCategoryId(""); }}
+                        sx={{
+                          borderColor: selectedCategoryId === cat._id ? "#c6ff00" : borderColor,
+                          color: selectedCategoryId === cat._id ? "#7cb518" : textColor,
+                          borderRadius: "14px", minWidth: "max-content",
+                        }}
+                      >
+                        {cat.name}
+                      </Button>
+                    ))}
                   </Stack>
 
-                  {/* TEMPLATE CARDS */}
-
-                  <Grid container spacing={2}>
-                    {[1, 2, 3, 4].map((item) => (
-                      <Grid item xs={12} sm={6} md={4} key={item}>
-                        <Paper
+                  {/* 2. DYNAMIC SUB CATEGORIES (Appears below Main Category) */}
+                  {selectedCategoryId && (
+                    <Stack direction="row" spacing={1.5} mb={3} sx={{ overflowX: "auto" }}>
+                      <Button
+                         variant="outlined" size="small"
+                         onClick={() => setSelectedSubCategoryId("")}
+                         sx={{
+                           borderColor: selectedSubCategoryId === "" ? "#c6ff00" : borderColor,
+                           color: selectedSubCategoryId === "" ? "#7cb518" : secondaryText,
+                           borderRadius: "12px", textTransform: "none",
+                         }}
+                      >All</Button>
+                      
+                      {subCategories.filter((sub) => sub.categoryId === selectedCategoryId).map((sub) => (
+                        <Button
+                          key={sub._id}
+                          variant="outlined" size="small"
+                          onClick={() => setSelectedSubCategoryId(sub._id)}
                           sx={{
-                            bgcolor: cardColor,
-                            borderRadius: "18px",
-                            overflow: "hidden",
-                            border: "1px solid #e0e0e0",
-                            boxShadow: "none",
+                            borderColor: selectedSubCategoryId === sub._id ? "#c6ff00" : borderColor,
+                            color: selectedSubCategoryId === sub._id ? "#7cb518" : secondaryText,
+                            borderRadius: "12px", textTransform: "none",
                           }}
                         >
-                          <Box
-                            sx={{
-                              height: 180,
-                              bgcolor: "#f5f5f5",
-                            }}
-                          />
+                          {sub.name}
+                        </Button>
+                      ))}
+                    </Stack>
+                  )}
 
-                          <Box p={2}>
-                            <Typography
-                              sx={{
-                                color: "#c68b45",
-                                fontWeight: 700,
-                                fontSize: "14px",
-                              }}
-                            >
-                              TEMPLATE {item}
-                            </Typography>
-                          </Box>
-                        </Paper>
-                      </Grid>
+                  {/* 3. TEMPLATE CARDS WITH VIDEOS */}
+                  <Grid container spacing={2}>
+                    {templates
+                      .filter((t) => t.categoryId === selectedCategoryId)
+                      .filter((t) => !selectedSubCategoryId || t.subcategoryId === selectedSubCategoryId)
+                      .map((template) => (
+                        <Grid item xs={12} sm={6} md={4} key={template._id}>
+                          <Paper sx={{ bgcolor: cardColor, borderRadius: "18px", overflow: "hidden", border: "1px solid #e0e0e0", boxShadow: "none", cursor: "pointer", transition: "0.2s", "&:hover": { borderColor: "#c6ff00", transform: "translateY(-4px)" } }}>
+                            
+                            {/* 🔥 THE VIDEO PLAYER 🔥 */}
+                            <Box sx={{ height: 180, bgcolor: "#000", position: "relative" }}>
+                              <video
+                                src={`${TEMP_URL}${template.imageUrl}`}
+                                autoPlay loop muted playsInline
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </Box>
+
+                            <Box p={2}>
+                              <Typography sx={{ color: "#c68b45", fontWeight: 700, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {template.name || template.fileName}
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        </Grid>
                     ))}
+
+                    {/* EMPTY STATE */}
+                    {templates.filter(t => t.categoryId === selectedCategoryId && (!selectedSubCategoryId || t.subcategoryId === selectedSubCategoryId)).length === 0 && (
+                      <Typography sx={{ color: secondaryText, mt: 2, ml: 2, width: "100%", textAlign: "center" }}>
+                        No videos found. Upload videos to the backend and seed the database.
+                      </Typography>
+                    )}
                   </Grid>
                 </Box>
               </Grid>
