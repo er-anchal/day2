@@ -3,7 +3,8 @@ import {
   deleteTemplate,
   getTemplateCategories,
   getTemplatesByCategorySlug,
-  getTemplateById, // ADD THIS
+  getTemplateById,
+  streamVideo, // ADD THIS
 } from "../controllers/templateController.js";
 
 import {
@@ -14,6 +15,8 @@ import {
 // import { globalSearch } from "../controllers/globalSearch.js";
 
 const router = express.Router();
+
+router.get("/stream/:id", streamVideo);
 
 router.get("/by-category/:slug", authMiddleware, getTemplatesByCategorySlug);
 

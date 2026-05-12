@@ -37,6 +37,7 @@ export default function UserDashboard() {
   const [tab, setTab] = useState(0);
   //   const [darkMode, setDarkMode] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedSub, setSelectedSub] = useState("Rings");
   const {
     darkMode,
     toggleTheme,
@@ -46,7 +47,7 @@ export default function UserDashboard() {
     borderColor,
     secondaryText,
   } = useThemeContext();
-  
+
   const handleProfileClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -84,6 +85,30 @@ export default function UserDashboard() {
     navigate("/catalogue");
   };
 
+  const [videoTemplates, setVideoTemplates] = useState([]);
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // Yahan 'jewellery' aapki category ka slug hai (Database me jo slug ho wo daalein)
+        const response = await axios.get(
+          "http://localhost:5000/api/templates/by-category/jewellery",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // authMiddleware laga hai isliye token bhejna zaroori hai
+            },
+          }
+        );
+        setVideoTemplates(response.data);
+      } catch (error) {
+        console.error("Failed to fetch video templates:", error);
+      }
+    };
+
+    if (tab === 1) {
+      fetchTemplates();
+    }
+  }, [tab]);
   // --- NAYA CODE START ---
   const fileInputRef = useRef(null);
   const [uploadStatus, setUploadStatus] = useState({ 1: "", 2: "" }); // Upload dikhane ke liye
@@ -635,42 +660,105 @@ export default function UserDashboard() {
                       Fashion
                     </Button>
                   </Stack>
+                  {/* SUB CATEGORY */}
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    mb={3}
+                    sx={{ overflowX: "auto", pb: 1 }}
+                  >
+                    {["Rings", "Necklaces", "Earrings", "Bracelets"].map(
+                      (item) => {
+                        const isActive = selectedSub === item; // Check if this button is active
+
+                        return (
+                          <Button
+                            key={item}
+                            variant="outlined"
+                            onClick={() => setSelectedSub(item)} // Click karne par state update hogi
+                            sx={{
+                              // Agar active hai toh aapka style, warna default
+                              borderColor: isActive ? "#c6ff00" : borderColor,
+                              color: isActive ? "#7cb518" : textColor,
+                              borderRadius: "14px",
+                              textTransform: "none",
+                              fontWeight: isActive ? 700 : 500,
+                              whiteSpace: "nowrap",
+                              "&:hover": {
+                                borderColor: "#c6ff00",
+                                bgcolor: "transparent",
+                              },
+                            }}
+                          >
+                            {item}
+                          </Button>
+                        );
+                      },
+                    )}
+                  </Stack>
 
                   {/* TEMPLATE CARDS */}
 
                   <Grid container spacing={2}>
-                    {[1, 2, 3, 4].map((item) => (
-                      <Grid item xs={12} sm={6} md={4} key={item}>
-                        <Paper
-                          sx={{
-                            bgcolor: cardColor,
-                            borderRadius: "18px",
-                            overflow: "hidden",
-                            border: "1px solid #e0e0e0",
-                            boxShadow: "none",
-                          }}
-                        >
-                          <Box
+                    {videoTemplates.length > 0 ? (
+                      videoTemplates.map((item, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={item._id}>
+                          <Paper
                             sx={{
-                              height: 180,
-                              bgcolor: "#f5f5f5",
+                              bgcolor: cardColor,
+                              borderRadius: "18px",
+                              overflow: "hidden",
+                              border: "1px solid #e0e0e0",
+                              boxShadow: "none",
                             }}
-                          />
-
-                          <Box p={2}>
-                            <Typography
+                          >
+                            {/* VIDEO PLAYER BOX */}
+                            <Box
                               sx={{
-                                color: "#c68b45",
-                                fontWeight: 700,
-                                fontSize: "14px",
+                                height: 180,
+                                bgcolor: "#000", // Video border black achha lagta hai
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
                               }}
                             >
-                              TEMPLATE {item}
-                            </Typography>
-                          </Box>
-                        </Paper>
-                      </Grid>
-                    ))}
+                              <video
+                                width="100%"
+                                height="100%"
+                                controls // Play/Pause controls ke liye
+                                style={{ objectFit: "cover" }} // Box me fit karne ke liye
+                              >
+                                {/* Nayi Streaming API ka route */}
+                                <source
+                                  src={`http://localhost:5000/api/templates/stream/${item._id}`}
+                                  type="video/mp4"
+                                />
+                                Your browser does not support the video tag.
+                              </video>
+                            </Box>
+
+                            <Box p={2}>
+                              <Typography
+                                sx={{
+                                  color: "#c68b45",
+                                  fontWeight: 700,
+                                  fontSize: "14px",
+                                }}
+                              >
+                                {item.subcategoryName
+                                  ? item.subcategoryName.toUpperCase()
+                                  : `TEMPLATE ${index + 1}`}
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      ))
+                    ) : (
+                      // Agar API se koi template na mile toh ye dikhega
+                      <Typography sx={{ p: 2, color: secondaryText, width: "100%", textAlign: "center", mt: 2 }}>
+                        No templates found for this category.
+                      </Typography>
+                    )}
                   </Grid>
                 </Box>
               </Grid>
@@ -754,9 +842,7 @@ export default function UserDashboard() {
                         <MenuItem value="" disabled>
                           Main Category
                         </MenuItem>
-                        <MenuItem value="jewellery">
-                          Jewellery
-                        </MenuItem>
+                        <MenuItem value="jewellery">Jewellery</MenuItem>
                       </Select>
                     </Box>
 
