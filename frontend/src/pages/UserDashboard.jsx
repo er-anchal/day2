@@ -85,31 +85,33 @@ export default function UserDashboard() {
   const [uploadStatus, setUploadStatus] = useState({ 0: "", 1: "", 2: "" });// Upload dikhane ke liye
   const [uploadedFilePath, setUploadedFilePath] = useState(null);
 
-  const handleFileUpload = async (event) => {
+ const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     const formData = new FormData();
-    formData.append("imageFile", file); // 'imageFile' backend ke multer se match hona chahiye
+    formData.append("imageFile", file);
 
     try {
       setUploadStatus((prev) => ({ ...prev, [tab]: "Uploading... ⏳" }));
 
-      // Backend ko request bhej rahe hain
       const response = await axios.post(
         "http://localhost:5000/api/upload/image",
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      setUploadStatus("Upload Successful! 🎉");
-      setUploadedFilePath(response.data.localPath); // Video generation me kaam aayega
+      // Yahan object use karna hai:
+      setUploadStatus((prev) => ({ ...prev, [tab]: "Upload Successful! 🎉" }));
+      setUploadedFilePath(response.data.localPath);
       console.log("Server par file yahan save hui:", response.data.localPath);
     } catch (error) {
       console.error("Upload Error:", error);
-      setUploadStatus("Upload failed! ❌");
+      // Yahan bhi object use karna hai:
+      setUploadStatus((prev) => ({ ...prev, [tab]: "Upload failed! ❌" }));
+    } finally {
+      // Ye line aapke code me missing thi, iske bina same image 2nd time upload nahi hogi
+      event.target.value = null; 
     }
   };
   // --- NAYA CODE END ---
