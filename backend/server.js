@@ -5,7 +5,7 @@ import connectDB from "./config/db.js";
 dotenv.config();
 
 import path from "path";
-import uploadRoutes from "./routes/uploadRoutes.js";
+import uploadRoutes from "./routes/uploadRoute.js";
 
 import authRoutes from "./routes/authRoutes.js";
 const app = express();

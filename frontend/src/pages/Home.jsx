@@ -10,8 +10,8 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
-// import Categories from "../components/Categories";
-// import Footer from "../components/Footer";
+import Categories from "../components/Categories";
+import Footer from "../components/Footer";
 
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -133,6 +133,7 @@ const Home = () => {
   const handleSearch = async (value) => {
     setSearchText(value);
 
+    // Clear results if search box is empty
     if (!value.trim()) {
       setSearchResults(null);
       return;
@@ -150,12 +151,27 @@ const Home = () => {
         },
       );
 
-      setSearchResults(res.data);
+      console.log("Search API Response:", res.data);
+
+      // Normalize response:
+      // If backend returns only `categories`, use them as `subcategories`
+      const formattedResults = {
+        subcategories: res.data.subcategories || res.data.categories || [],
+
+        templates: res.data.templates || [],
+      };
+
+      console.log("Formatted Search Results:", formattedResults);
+
+      setSearchResults(formattedResults);
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
+      setSearchResults({
+        subcategories: [],
+        templates: [],
+      });
     }
   };
-
   const templateSettings = {
     dots: false,
     infinite: true,
@@ -671,7 +687,7 @@ const Home = () => {
               );
             })}
           </Box>
-          {/* <Footer /> */}
+          <Footer />
         </>
       ) : (
         <Box
@@ -725,8 +741,10 @@ const Home = () => {
                 }}
               />
 
+              {/* SEARCH RESULTS DROPDOWN */}
+              {/* SEARCH RESULTS DROPDOWN */}
               {searchResults &&
-                ((searchResults.categories?.length || 0) > 0 ||
+                ((searchResults.subcategories?.length || 0) > 0 ||
                   (searchResults.templates?.length || 0) > 0) && (
                   <Box
                     sx={{
@@ -736,66 +754,73 @@ const Home = () => {
                       width: "100%",
                       backgroundColor: cardColor,
                       boxShadow: 3,
-                      borderRadius: 1,
+                      borderRadius: 2,
                       mt: 1,
-                      p: 2,
+                      p: 1,
                       zIndex: 1000,
-                      maxHeight: 300,
+                      maxHeight: 350,
                       overflowY: "auto",
+                      border: `1px solid ${borderColor}`,
                     }}
                   >
-                    {searchResults.categories?.map((cat) => (
-                      <Typography
-                        key={cat._id}
-                        sx={{
-                          cursor: "pointer",
-                          p: 1,
-                          borderRadius: 1,
-                          "&:hover": {
-                            backgroundColor: cardColor,
-                          },
-                        }}
-                        onClick={() => {
-                          setSearchText(cat.name);
-                          setSearchResults(null);
-                          navigate(`/templates?category=${cat.slug}`);
-                        }}
-                      >
-                        📁 {cat.name}
-                      </Typography>
-                    ))}
+                    {/* SHOW ONLY SUBCATEGORY NAMES */}
+                    {searchResults.templates?.map((template, index) => {
+                      const subcategoryName =
+                        template.subcategoryName ||
+                        template.subCategory?.name ||
+                        "Other";
 
-                    {searchResults.templates?.map((template) => (
-                      <Box
-                        key={template._id}
-                        onClick={() => {
-                          setSearchResults(null);
-                          setSearchText("");
-                          navigate(`/editor/${template._id}`);
-                        }}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          p: 1,
-                          borderRadius: 2,
-                          cursor: "pointer",
-                          transition: "0.2s",
-                          "&:hover": {
-                            backgroundColor: cardColor,
-                          },
-                        }}
-                      >
-                        <Box>
+                      const subcategorySlug =
+                        template.subcategorySlug ||
+                        template.subCategory?.slug ||
+                        subcategoryName.toLowerCase().replace(/\s+/g, "-");
+
+                      // Show each subcategory only once
+                      const alreadyShown = searchResults.templates
+                        .slice(0, index)
+                        .some((t) => {
+                          const prevName =
+                            t.subcategoryName || t.subCategory?.name || "Other";
+                          return prevName === subcategoryName;
+                        });
+
+                      if (alreadyShown) return null;
+
+                      return (
+                        <Box
+                          key={subcategorySlug}
+                          onClick={() => {
+                            setSearchText(subcategoryName);
+                            setSearchResults(null);
+
+                            // Open templates page filtered by subcategory
+                            navigate(
+                              `/templates?subcategory=${encodeURIComponent(
+                                subcategorySlug,
+                              )}`,
+                            );
+                          }}
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            cursor: "pointer",
+                            borderRadius: 1,
+                            transition: "0.2s",
+                            "&:hover": {
+                              backgroundColor: darkMode ? "#1e293b" : "#f5f5f5",
+                            },
+                          }}
+                        >
                           <Typography fontWeight={600}>
-                            🖼️ {template.name}
+                            📂 {subcategoryName}
                           </Typography>
-                          <Typography variant="caption" color={textColor}>
-                            Click to open template
-                          </Typography>
+                          {/* 
+                          <Typography variant="caption" color={secondaryText}>
+                            View templates
+                          </Typography> */}
                         </Box>
-                      </Box>
-                    ))}
+                      );
+                    })}
                   </Box>
                 )}
             </Box>
