@@ -82,35 +82,41 @@ export default function UserDashboard() {
 
   // --- NAYA CODE START ---
   const fileInputRef = useRef(null);
-  const [uploadStatus, setUploadStatus] = useState({ 0: "", 1: "", 2: "" });// Upload dikhane ke liye
+  const [uploadStatus, setUploadStatus] = useState({ 1: "", 2: "" }); // Upload dikhane ke liye
   const [uploadedFilePath, setUploadedFilePath] = useState(null);
+  const [uploadedImages, setUploadedImages] = useState({ 1: null, 2: null });
 
- const handleFileUpload = async (event) => {
+  const handleFileUpload = async (event) => {
+
+    if (tab === 0) return;
     const file = event.target.files[0];
     if (!file) return;
 
     const formData = new FormData();
     formData.append("imageFile", file);
 
+    let folderName = tab === 1 ? "video_gen" : "theme_gen";
+
     try {
       setUploadStatus((prev) => ({ ...prev, [tab]: "Uploading... ⏳" }));
 
       const response = await axios.post(
-        "http://localhost:5000/api/upload/image",
+        `http://localhost:5000/api/upload/image?folder=${folderName}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // Yahan object use karna hai:
       setUploadStatus((prev) => ({ ...prev, [tab]: "Upload Successful! 🎉" }));
       setUploadedFilePath(response.data.localPath);
-      console.log("Server par file yahan save hui:", response.data.localPath);
+      
+      // Image Preview Set Karna
+      setUploadedImages((prev) => ({ ...prev, [tab]: URL.createObjectURL(file) }));
+
+      console.log(`Saved at ${folderName}:`, response.data.localPath);
     } catch (error) {
       console.error("Upload Error:", error);
-      // Yahan bhi object use karna hai:
       setUploadStatus((prev) => ({ ...prev, [tab]: "Upload failed! ❌" }));
     } finally {
-      // Ye line aapke code me missing thi, iske bina same image 2nd time upload nahi hogi
       event.target.value = null; 
     }
   };
@@ -354,7 +360,7 @@ export default function UserDashboard() {
                   <Box
                     onClick={() => fileInputRef.current.click()}
                     sx={{
-                      border: "2px dashed #d6d6d6",
+                      border: uploadedImages[1] ? "none" : "2px dashed #d6d6d6",
                       borderRadius: "20px",
                       height: "180px",
                       display: "flex",
@@ -365,18 +371,19 @@ export default function UserDashboard() {
                       cursor: "pointer",
                       "&:hover": { borderColor: "#c6ff00" },
                       mb: 3,
+                      overflow: "hidden", // Full box me preview ke liye
                     }}
                   >
-                    <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
-
-                    <Typography fontWeight={700}>
-                      {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
-                    </Typography>
-
-                    {!uploadStatus && (
-                      <Typography variant="body2">
-                        JPG, PNG, WEBP, HEIC — max 10MB
-                      </Typography>
+                    {uploadedImages[1] ? (
+                      <img src={uploadedImages[1]} alt="Video Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <>
+                        <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
+                        <Typography fontWeight={700}>
+                          {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
+                        </Typography>
+                        {!uploadStatus[1] && <Typography variant="body2">JPG, PNG, WEBP, HEIC — max 10MB</Typography>}
+                      </>
                     )}
                   </Box>
 
@@ -759,7 +766,7 @@ export default function UserDashboard() {
                   <Box
                     onClick={() => fileInputRef.current.click()}
                     sx={{
-                      border: "2px dashed #d6d6d6",
+                      border: uploadedImages[2] ? "none" : "2px dashed #d6d6d6",
                       cursor: "pointer",
                       borderRadius: "30px",
                       height: "360px",
@@ -768,52 +775,26 @@ export default function UserDashboard() {
                       alignItems: "center",
                       flexDirection: "column",
                       color: secondaryText,
-                      width: "160%",
+                      width: "100%",
+                      overflow: "hidden", // Full box me preview ke liye
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: 100,
-                        height: 100,
-                        bgcolor: "rgba(198,255,0,0.15)",
-                        borderRadius: "30px",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        mb: 4,
-                      }}
-                    >
-                      <CloudUploadRoundedIcon
-                        sx={{
-                          fontSize: 50,
-                          color: "#7cb518",
-                        }}
-                      />
-                    </Box>
-
-                    <Typography
-                      variant="h4"
-                      fontWeight={700}
-                      sx={{
-                        color: textColor,
-                        mb: 2,
-                      }}
-                    >
-                      {uploadStatus[2] ? uploadStatus[2] : "Drop your reference here"}
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        color: textColor,
-                        textAlign: "center",
-                      }}
-                    >
-                      Supports JPG, PNG, WEBP & HEIC
-                      <br />
-                      (Max size 16MB)
-                    </Typography>
+                    {uploadedImages[2] ? (
+                       <img src={uploadedImages[2]} alt="Theme Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <>
+                        <Box sx={{ width: 100, height: 100, bgcolor: "rgba(198,255,0,0.15)", borderRadius: "30px", display: "flex", justifyContent: "center", alignItems: "center", mb: 4 }}>
+                          <CloudUploadRoundedIcon sx={{ fontSize: 50, color: "#7cb518" }} />
+                        </Box>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: textColor, mb: 2 }}>
+                          {uploadStatus[2] ? uploadStatus[2] : "Drop your reference here"}
+                        </Typography>
+                        <Typography sx={{ color: textColor, textAlign: "center" }}>
+                          Supports JPG, PNG, WEBP & HEIC<br />(Max size 16MB)
+                        </Typography>
+                      </>
+                    )}
                   </Box>
-
                   <Button
                     // fullWidth
                     variant="contained"
