@@ -9,12 +9,12 @@ import Register from "./pages/auth/Register";
 // import Profile from "./pages/Profile";
 import Home from "./pages/Home";
 // import Editor from "./pages/Editor"/;
-// import AdminRoute from "./pages/auth/AdminRoute";
-// import TemplatesPage from "./pages/Templates";
+import AdminRoute from "./pages/auth/AdminRoute";
+import TemplatesPage from "./pages/Templates";
 // import UserDesigns from "./pages/UserDesigns";
 // import DesignFrameCanvas from "./components/DesignFrameCanvas";
-// import CategoriesPage from "./pages/CategoriesPage";
-// import SubcategoriesPage from "./pages/SubcategoriesPage";
+import CategoriesPage from "./pages/CategoriesPage";
+import SubcategoriesPage from "./pages/SubcategoriesPage";
 
 // import AddTemplatePage from "./pages/AddTemplatePage";
 // import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -100,30 +100,30 @@ function App() {
           <Route path="/dashboard" element={<UserDashboard />} />
 
           {/* ADMIN ROUTES */}
-          {/* <Route
+          <Route
             path="/categories"
             element={
               <AdminRoute>
                 <CategoriesPage />
               </AdminRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/subcategories"
             element={
               <AdminRoute>
                 <SubcategoriesPage />
               </AdminRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/templates"
             element={
               <AdminRoute>
                 <TemplatesPage />
               </AdminRoute>
             }
-          /> */}
+          />
           {/* <Route
             path="/templates/add"
             element={

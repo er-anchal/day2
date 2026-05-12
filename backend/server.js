@@ -8,6 +8,11 @@ import path from "path";
 import uploadRoutes from "./routes/uploadRoute.js";
 
 import authRoutes from "./routes/authRoutes.js";
+
+import templateRoutes from "./routes/templateRoutes.js";
+import templateCategoryRoutes from "./routes/templateCategoryRoutes.js";
+import subCategoryRoutes from "./routes/subCategoryRoutes.js";
+
 const app = express();
 app.use(cors());
 
@@ -25,6 +30,10 @@ app.use(
 connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/templates", templateRoutes);
+app.use("/api/template-categories", templateCategoryRoutes);
+app.use("/api/template-subcategories", subCategoryRoutes);
+
 app.get("/", (req, res) => {
   res.send("Banner App Backend Running");
 });

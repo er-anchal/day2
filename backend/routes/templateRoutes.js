@@ -11,7 +11,7 @@ import {
   authMiddleware,
 } from "../middleware/authMiddleware.js";
 
-import { globalSearch } from "../controllers/globalSearch.js";
+// import { globalSearch } from "../controllers/globalSearch.js";
 
 const router = express.Router();
 
@@ -23,6 +23,6 @@ router.get("/", authMiddleware, adminMiddleware, getTemplateCategories);
 
 router.delete("/:id", authMiddleware, adminMiddleware, deleteTemplate);
 
-router.get("/search", authMiddleware, globalSearch);
+// router.get("/search", authMiddleware, globalSearch);
 
 export default router;
