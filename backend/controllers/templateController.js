@@ -8,7 +8,6 @@ export const getTemplateCategories = async (req, res) => {
     const categories = await TemplateCategory.find({ isActive: 0 }).sort({
       createdAt: -1,
     });
-    // console.log(categories);
     return res.json(categories);
   } catch (error) {
     console.error(error);
@@ -16,6 +15,7 @@ export const getTemplateCategories = async (req, res) => {
     return res.status(500).json({ message: errMsg });
   }
 };
+
 export const getTemplateById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -31,7 +31,6 @@ export const getTemplateById = async (req, res) => {
     res.json(template);
   } catch (err) {
     console.error(err);
-
     res.status(500).json({
       message: "Failed to load template",
     });
@@ -42,7 +41,7 @@ export const getTemplatesByCategorySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    // Find category
+    // 1. Find category
     const category = await TemplateCategory.findOne({
       slug,
       isActive: 0,
@@ -54,23 +53,57 @@ export const getTemplatesByCategorySlug = async (req, res) => {
       });
     }
 
-    // Fetch templates
+    // ========================================================
+    // 👈 MAGIC AUTO-SYNC: Folder se videos read karke DB me daalna
+    // ========================================================
+    const videosBaseDir = path.resolve("uploads/videos");
+    
+    if (fs.existsSync(videosBaseDir)) {
+      const subfolders = fs.readdirSync(videosBaseDir); 
+
+      for (const folder of subfolders) {
+        const folderPath = path.join(videosBaseDir, folder);
+        
+        if (fs.statSync(folderPath).isDirectory()) {
+          const files = fs.readdirSync(folderPath);
+
+          for (const file of files) {
+            if (file.endsWith('.mp4')) {
+              const existingTemplate = await Template.findOne({
+                fileName: file,
+                categoryId: category._id
+              });
+
+              if (!existingTemplate) {
+                await Template.create({
+                  categoryId: category._id,
+                  subcategoryName: folder.charAt(0).toUpperCase() + folder.slice(1), 
+                  fileName: file,
+                  isActive: 0
+                });
+                console.log(`✅ Auto-Synced new video: ${file} in ${folder}`);
+              }
+            }
+          }
+        }
+      }
+    }
+    // ========================================================
+
+    // 2. Ab DB se saari templates fetch kar lo
     const templates = await Template.find({
       categoryId: category._id,
       isActive: 0,
     }).sort({ createdAt: -1 });
 
-    // Return ALL required fields including subcategory data
+    // 3. Return ALL required fields
     const formattedTemplates = templates.map((t) => ({
       _id: t._id,
       fileName: t.fileName,
       categoryId: t.categoryId,
       categorySlug: category.slug,
-
-      // IMPORTANT: include subcategory fields
       subcategoryId: t.subcategoryId,
       subcategoryName: t.subcategoryName,
-
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
     }));
@@ -83,25 +116,22 @@ export const getTemplatesByCategorySlug = async (req, res) => {
     });
   }
 };
+
 export const deleteTemplate = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id; // assuming authMiddleware sets req.user
+    const userId = req.user._id; 
 
-    // Find the template
     const template = await Template.findById(id);
     if (!template) {
       return res.status(404).json({ message: "Template not found" });
     }
 
-    // Soft delete: mark as inactive
-    template.isActive = 1; // or true if you change to boolean
+    template.isActive = 1; 
     template.deletedBy = userId;
     template.deletedAt = new Date();
 
     await template.save();
-
-    // Optionally, you could also remove the file from disk here
 
     res.json({ message: "Template deleted successfully" });
   } catch (err) {
@@ -109,9 +139,7 @@ export const deleteTemplate = async (req, res) => {
     res.status(500).json({ message: "Failed to delete template" });
   }
 };
-// ==========================================
-// 👈 NAYA CONTROLLER: VIDEO STREAM KARNE KE LIYE
-// ==========================================
+
 export const streamVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -121,26 +149,19 @@ export const streamVideo = async (req, res) => {
       return res.status(404).json({ message: "Video template not found" });
     }
 
-    // 1. Agar aapne DB me sirf "ring-1" save kiya hai, toh .mp4 khud lag jayega
     let fileName = template.fileName;
     if (!fileName.endsWith('.mp4')) {
       fileName += '.mp4';
     }
 
-    // 2. Subcategory ka folder name (e.g., "rings") dynamically lene ke liye
-    // Agar kisi template me subcategory nahi hai, toh wo 'general' folder dhoondega
     const folderName = template.subcategoryName ? template.subcategoryName.toLowerCase() : "general";
-
-    // 3. Exact path banana: uploads/videos/rings/ring-1.mp4
     const videoPath = path.resolve(`uploads/videos/${folderName}/${fileName}`);
 
-    // Check karna ki server par sach me file wahan hai ya nahi
     if (!fs.existsSync(videoPath)) {
       console.error("File not found at path:", videoPath);
       return res.status(404).json({ message: `Video missing on server at: uploads/videos/${folderName}/${fileName}` });
     }
 
-    // Video Streaming Logic (Chunks me bhejna)
     const stat = fs.statSync(videoPath);
     const fileSize = stat.size;
     const range = req.headers.range;
