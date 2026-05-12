@@ -82,7 +82,7 @@ export default function UserDashboard() {
 
   // --- NAYA CODE START ---
   const fileInputRef = useRef(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Upload dikhane ke liye
+  const [uploadStatus, setUploadStatus] = useState({ 0: "", 1: "", 2: "" });// Upload dikhane ke liye
   const [uploadedFilePath, setUploadedFilePath] = useState(null);
 
   const handleFileUpload = async (event) => {
@@ -90,22 +90,25 @@ export default function UserDashboard() {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('imageFile', file); // 'imageFile' backend ke multer se match hona chahiye
+    formData.append("imageFile", file); // 'imageFile' backend ke multer se match hona chahiye
 
     try {
-      setUploadStatus("Uploading... Please wait ⏳");
-      
+      setUploadStatus((prev) => ({ ...prev, [tab]: "Uploading... ⏳" }));
+
       // Backend ko request bhej rahe hain
-      const response = await axios.post('http://localhost:5000/api/upload/image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/upload/image",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       setUploadStatus("Upload Successful! 🎉");
       setUploadedFilePath(response.data.localPath); // Video generation me kaam aayega
       console.log("Server par file yahan save hui:", response.data.localPath);
-
     } catch (error) {
-      console.error('Upload Error:', error);
+      console.error("Upload Error:", error);
       setUploadStatus("Upload failed! ❌");
     }
   };
@@ -123,6 +126,13 @@ export default function UserDashboard() {
       {/* ================= BODY ================= */}
 
       <Container maxWidth="lg" sx={{ py: 5 }}>
+        <input
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+        />
         {/* ================= TABS ================= */}
         <Paper
           sx={{
@@ -214,6 +224,7 @@ export default function UserDashboard() {
               }}
             >
               <Box
+                onClick={() => fileInputRef.current.click()}
                 sx={{
                   width: "100%",
                   height: "100%",
@@ -223,6 +234,7 @@ export default function UserDashboard() {
                   justifyContent: "center",
                   alignItems: "center",
                   flexDirection: "column",
+                  cursor: "pointer",
                   py: 10,
                 }}
               >
@@ -250,7 +262,7 @@ export default function UserDashboard() {
                 </Box>
 
                 <Typography variant="h5" fontWeight={700} gutterBottom>
-                  Tap to upload
+                  {uploadStatus[0] ? uploadStatus[0] : "Tap to upload"}
                 </Typography>
 
                 <Typography
@@ -337,14 +349,6 @@ export default function UserDashboard() {
                     Image to Video
                   </Typography>
 
-                  {/* UPLOAD */}
-                    <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                  />
                   <Box
                     onClick={() => fileInputRef.current.click()}
                     sx={{
@@ -364,7 +368,7 @@ export default function UserDashboard() {
                     <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
 
                     <Typography fontWeight={700}>
-                      {uploadStatus ? uploadStatus : "DROP OR CLICK TO UPLOAD"}
+                      {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
                     </Typography>
 
                     {!uploadStatus && (
@@ -751,8 +755,10 @@ export default function UserDashboard() {
                   </Typography>
 
                   <Box
+                    onClick={() => fileInputRef.current.click()}
                     sx={{
                       border: "2px dashed #d6d6d6",
+                      cursor: "pointer",
                       borderRadius: "30px",
                       height: "360px",
                       display: "flex",
@@ -791,7 +797,7 @@ export default function UserDashboard() {
                         mb: 2,
                       }}
                     >
-                      Drop your reference here
+                      {uploadStatus[2] ? uploadStatus[2] : "Drop your reference here"}
                     </Typography>
 
                     <Typography
