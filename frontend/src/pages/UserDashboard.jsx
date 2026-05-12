@@ -11,6 +11,7 @@ import {
   Menu,
   MenuItem,
   Avatar,
+  Select,
 } from "@mui/material";
 import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
@@ -368,9 +369,11 @@ export default function UserDashboard() {
                     Image to Video
                   </Typography>
 
+                  {/* 👈 TAB 1 UPLOAD BOX UPDATE */}
                   <Box
-                    onClick={() => fileInputRef.current.click()}
+                    onClick={() => !uploadedImages[1] && fileInputRef.current.click()}
                     sx={{
+                      position: "relative",
                       border: uploadedImages[1] ? "none" : "2px dashed #d6d6d6",
                       borderRadius: "20px",
                       height: "180px",
@@ -379,35 +382,44 @@ export default function UserDashboard() {
                       alignItems: "center",
                       flexDirection: "column",
                       color: textColor,
-                      cursor: "pointer",
-                      "&:hover": { borderColor: "#c6ff00" },
+                      cursor: uploadedImages[1] ? "default" : "pointer",
+                      "&:hover": { borderColor: uploadedImages[1] ? "none" : "#c6ff00" },
                       mb: 3,
-                      overflow: "hidden", // Full box me preview ke liye
+                      overflow: "hidden",
                     }}
                   >
                     {uploadedImages[1] ? (
-                      <img
-                        src={uploadedImages[1]}
-                        alt="Video Ref"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
+                      <>
+                        <img src={uploadedImages[1]} alt="Video Ref" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <Box
+                          onClick={(e) => handleRemoveImage(e, 1)}
+                          sx={{
+                            position: "absolute",
+                            top: 10,
+                            right: 10,
+                            bgcolor: "black",
+                            color: "white",
+                            borderRadius: "50%",
+                            width: 28,
+                            height: 28,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            zIndex: 10,
+                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" }
+                          }}
+                        >
+                          <CloseIcon sx={{ fontSize: 18 }} />
+                        </Box>
+                      </>
                     ) : (
                       <>
                         <CloudUploadRoundedIcon sx={{ fontSize: 50, mb: 2 }} />
                         <Typography fontWeight={700}>
-                          {uploadStatus[1]
-                            ? uploadStatus[1]
-                            : "DROP OR CLICK TO UPLOAD"}
+                          {uploadStatus[1] ? uploadStatus[1] : "DROP OR CLICK TO UPLOAD"}
                         </Typography>
-                        {!uploadStatus[1] && (
-                          <Typography variant="body2">
-                            JPG, PNG, WEBP, HEIC — max 10MB
-                          </Typography>
-                        )}
+                        {!uploadStatus[1] && <Typography variant="body2">JPG, PNG, WEBP, HEIC — max 10MB</Typography>}
                       </>
                     )}
                   </Box>
@@ -695,57 +707,62 @@ export default function UserDashboard() {
                     {/* FIRST SELECT */}
 
                     <Box sx={{ flex: 1 }}>
-                      <Typography
-                        sx={{
-                          color: textColor,
-                          mb: 1,
-                          fontWeight: 700,
-                        }}
-                      >
+                      <Typography sx={{ color: textColor, mb: 1, fontWeight: 700 }}>
                         MAIN CATEGORY
                       </Typography>
-
-                      <select
-                        style={{
+                      <Select
+                        defaultValue="Jewellery"
+                        displayEmpty
+                        sx={{
                           width: "100%",
-                          height: "35px",
-                          background: cardColor,
-                          border: "1px solid #d6d6d6",
+                          height: "45px",
+                          bgcolor: cardColor,
                           borderRadius: "14px",
                           color: textColor,
-                          padding: "0 16px",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#d6d6d6",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#c6ff00", // Hover par theme color
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#c6ff00",
+                          },
                         }}
                       >
-                        <option>Jewellery</option>
-                      </select>
+                        <MenuItem value="jewellery">Jewellery</MenuItem>
+                      </Select>
                     </Box>
 
-                    {/* SECOND SELECT */}
-
+                    {/* SUB CATEGORY */}
                     <Box sx={{ flex: 1 }}>
-                      <Typography
-                        sx={{
-                          color: textColor,
-                          mb: 1,
-                          fontWeight: 700,
-                        }}
-                      >
-                        MAIN CATEGORY
+                      <Typography sx={{ color: textColor, mb: 1, fontWeight: 700 }}>
+                        SUB CATEGORY
                       </Typography>
-
-                      <select
-                        style={{
+                      <Select
+                        defaultValue="Select Category"
+                        sx={{
                           width: "100%",
-                          height: "35px",
-                          background: cardColor,
-                          border: "1px solid #d6d6d6",
+                          height: "45px",
+                          bgcolor: cardColor,
                           borderRadius: "14px",
                           color: textColor,
-                          padding: "0 16px",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#d6d6d6",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#c6ff00",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#c6ff00",
+                          },
                         }}
                       >
-                        <option>Jewellery</option>
-                      </select>
+                        <MenuItem value="rings">Rings</MenuItem>
+                        <MenuItem value="necklaces">Pendant</MenuItem>
+                        <MenuItem value="earrings">Bangles</MenuItem>
+                        <MenuItem value="clothing">Articles</MenuItem>
+                      </Select>
                     </Box>
                   </Box>
                   <Typography
