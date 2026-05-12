@@ -41,7 +41,7 @@ const PricingSchema = new mongoose.Schema(
     },
     
     videoCredits: {
-      allocated: { type: Number, default: 0 },
+      allocated: { type: Number, default: 5 },
       used: { type: Number, default: 0 },
     },
 

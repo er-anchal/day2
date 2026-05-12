@@ -62,15 +62,9 @@ export const registerUser = async (req, res) => {
       name: user.name,
       planName: "FREE",
       type: "free",
-      imageCredits: {
-        allocated: 100, 
-        used: 0,
-      },
-      videoCredits: {
-        allocated: 5,
-        used: 0,
-      },
-      isActive: 1,
+      imageCredits: { allocated: 100, used: 0 },
+      videoCredits: { allocated: 5, used: 0 },
+      isActive: 0
     });
 
     // 4️⃣ Generate JWT
