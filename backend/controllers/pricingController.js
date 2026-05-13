@@ -2,7 +2,7 @@ import Pricing from "../models/Pricing.js";
 
 export const getUserPricing = async (req, res) => {
   try {
-    let pricingData = await Pricing.findOne({ userId: req.user._id, isActive: 1 });
+    let pricingData = await Pricing.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
 
 
     if (!pricingData) {
@@ -14,7 +14,7 @@ export const getUserPricing = async (req, res) => {
         type: "free",
         imageCredits: { allocated: 100, used: 0 },
         videoCredits: { allocated: 5, used: 0 },
-        isActive: 0
+        isActive: 1
       });
     }
 
