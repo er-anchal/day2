@@ -69,7 +69,7 @@ const SubCategoryAdmin = () => {
 
   /* ---------------- FETCH SUBCATEGORIES ---------------- */
   const fetchSubCategories = useCallback(async () => {
-    const res = await axios.get(`${API_URL}/subcategories`, {
+    const res = await axios.get(`${API_URL}/template-subcategories`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setSubCategories(res.data);
@@ -88,7 +88,7 @@ const SubCategoryAdmin = () => {
     try {
       setLoading(true);
 
-      await axios.post(`${API_URL}/subcategories`, form, {
+      await axios.post(`${API_URL}/template-subcategories`, form, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -106,7 +106,7 @@ const SubCategoryAdmin = () => {
   const handleEditSave = async () => {
     try {
       await axios.put(
-        `${API_URL}/subcategories/${selected._id}`,
+        `${API_URL}/template-subcategories/${selected._id}`,
         { name: editName },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -124,7 +124,7 @@ const SubCategoryAdmin = () => {
   /* ---------------- DELETE ---------------- */
   const handleDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/subcategories/${selected._id}`, {
+      await axios.delete(`${API_URL}/template-subcategories/${selected._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -156,6 +156,7 @@ const SubCategoryAdmin = () => {
       <Paper sx={{ p: 2, mb: 3 }} elevation={3}>
         <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
           <TextField
+            id="subcategory-name"
             label="SubCategory Name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -163,6 +164,7 @@ const SubCategoryAdmin = () => {
           />
 
           <TextField
+            id="select-category"
             select
             label="Select Category"
             value={form.categoryId}

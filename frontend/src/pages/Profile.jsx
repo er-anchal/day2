@@ -25,6 +25,7 @@ import {
   DesignServices as DesignServicesIcon,
   AutoAwesome,
   UsbRounded,
+  Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
@@ -42,7 +43,16 @@ const Profile = () => {
     name: "",
     phone: "",
     email: "",
+    dob: "",
   });
+  const [dobError, setDobError] = useState("");
+
+  // DOB constraints
+  const todayDate = new Date();
+  const maxDob = new Date(todayDate);
+  maxDob.setDate(todayDate.getDate() - 1);
+  const maxDobStr = maxDob.toISOString().split("T")[0];
+  const currentYear = todayDate.getFullYear();
 
   // Sidebar menu items
   const isAdmin = user?.role === "ADMIN";
@@ -98,6 +108,11 @@ const Profile = () => {
       icon: <ContactMailIcon />,
       path: "/contact-us",
     },
+    {
+      label: "Notifications",
+      icon: <NotificationsIcon />,
+      path: "/notifications",
+    },
   ];
 
   const userMenuItems = [
@@ -146,9 +161,14 @@ const Profile = () => {
       icon: <ContactMailIcon />,
       path: "/contact-us",
     },
+    {
+      label: "Notifications",
+      icon: <NotificationsIcon />,
+      path: "/notifications",
+    },
   ];
 
-const [pricing, setPricing] = useState(null);
+  const [pricing, setPricing] = useState(null);
 
   // Final sidebar items
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
@@ -167,6 +187,7 @@ const [pricing, setPricing] = useState(null);
           name: res.data.user.name || "",
           phone: res.data.user.phone || "",
           email: res.data.user.email || "",
+          dob: res.data.user.dob ? res.data.user.dob.split('T')[0] : "",
         });
       } catch (err) {
         console.error(err);
@@ -179,13 +200,16 @@ const [pricing, setPricing] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return; 
+    if (!token) return;
 
     const fetchPricing = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/pricing/my-plan`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/pricing/my-plan`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         setPricing(res.data);
       } catch (err) {
         console.error("Pricing fetch failed", err);
@@ -196,7 +220,18 @@ const [pricing, setPricing] = useState(null);
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "dob") {
+      setDobError("");
+      if (value) {
+        const year = parseInt(value.split("-")[0], 10);
+        if (year >= currentYear) {
+          setDobError(`Birth year must be less than ${currentYear}.`);
+          return;
+        }
+      }
+    }
+    setForm({ ...form, [name]: value });
   };
 
   const handleUpdate = async () => {
@@ -204,7 +239,7 @@ const [pricing, setPricing] = useState(null);
       const token = localStorage.getItem("token");
 
       const res = await axios.put(
-        `${import.meta.env.VITE_API_URL}/auth/update-profile`,
+        `${import.meta.env.VITE_API_URL}/auth/me`,
         form,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -213,8 +248,10 @@ const [pricing, setPricing] = useState(null);
 
       setUser(res.data.user);
       setEditMode(false);
+      alert("Profile updated successfully!");
     } catch (err) {
       console.error("Update failed", err);
+      alert("Failed to update profile");
     }
   };
 
@@ -348,6 +385,27 @@ const [pricing, setPricing] = useState(null);
           </Typography>
         )}
 
+        {/* DOB */}
+        {editMode ? (
+          <TextField
+            fullWidth
+            name="dob"
+            type="date"
+            label="Date of Birth"
+            value={form.dob}
+            onChange={handleChange}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ max: maxDobStr }}
+            error={!!dobError}
+            helperText={dobError || `Birth year must be before ${currentYear}`}
+            sx={{ mb: 2 }}
+          />
+        ) : (
+          <Typography sx={{ mb: 2 }}>
+            <strong>Date of Birth:</strong> {user.dob ? new Date(user.dob).toLocaleDateString() : "Not set"}
+          </Typography>
+        )}
+
         <Typography sx={{ mb: 1 }}>
           <strong>Role:</strong> {user.role}
         </Typography>
@@ -357,33 +415,49 @@ const [pricing, setPricing] = useState(null);
         </Typography>
 
         {/* SUBSCRIPTION & CREDITS SECTION */}
-<Divider sx={{ my: 3 }} />
-<Typography variant="h6" fontWeight={700} mb={2}>
-  Subscription & Usage
-</Typography>
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="h6" fontWeight={700} mb={2}>
+          Subscription & Usage
+        </Typography>
 
-<Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-  <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-    <Typography variant="body2" color="text.secondary">Image Credits</Typography>
-    <Typography variant="h5" fontWeight={700} color="primary">
-      {pricing ? `${pricing.imageCredits.used} / ${pricing.imageCredits.allocated}` : "0 / 0"}
-    </Typography>
-  </Paper>
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, textAlign: "center", borderRadius: 2 }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Image Credits
+            </Typography>
+            <Typography variant="h5" fontWeight={700} color="primary">
+              {pricing
+                ? `${pricing.imageCredits.used} / ${pricing.imageCredits.allocated}`
+                : "0 / 0"}
+            </Typography>
+          </Paper>
 
-  <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-    <Typography variant="body2" color="text.secondary">Video Credits</Typography>
-    <Typography variant="h5" fontWeight={700} color="secondary">
-      {pricing ? `${pricing.videoCredits.used} / ${pricing.videoCredits.allocated}` : "0 / 0"}
-    </Typography>
-  </Paper>
-</Box>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, textAlign: "center", borderRadius: 2 }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Video Credits
+            </Typography>
+            <Typography variant="h5" fontWeight={700} color="secondary">
+              {pricing
+                ? `${pricing.videoCredits.used} / ${pricing.videoCredits.allocated}`
+                : "0 / 0"}
+            </Typography>
+          </Paper>
+        </Box>
 
-{pricing && (
-  <Typography sx={{ mt: 2, fontSize: "0.9rem", color: "gray" }}>
-    <strong>Current Plan:</strong> {pricing.planName} ({pricing.type}) <br />
-    <strong>Status:</strong> {pricing.isActive === 1 ? "Active" : "Inactive"}
-  </Typography>
-)}
+        {pricing && (
+          <Typography sx={{ mt: 2, fontSize: "0.9rem", color: "gray" }}>
+            <strong>Current Plan:</strong> {pricing.planName} ({pricing.type}){" "}
+            <br />
+            <strong>Status:</strong>{" "}
+            {pricing.isActive === 1 ? "Active" : "Inactive"}
+          </Typography>
+        )}
 
         {/* ACTION BUTTONS */}
         <Stack direction="row" spacing={2}>
@@ -392,7 +466,18 @@ const [pricing, setPricing] = useState(null);
               <Button variant="contained" onClick={handleUpdate}>
                 Save
               </Button>
-              <Button variant="outlined" onClick={() => setEditMode(false)}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setEditMode(false);
+                  setForm({
+                    name: user.name || "",
+                    phone: user.phone || "",
+                    email: user.email || "",
+                    dob: user.dob ? user.dob.split('T')[0] : "",
+                  });
+                }}
+              >
                 Cancel
               </Button>
             </>

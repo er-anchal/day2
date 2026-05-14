@@ -21,6 +21,7 @@ import {
 import { useAuth } from "../pages/auth/AuthContext";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 
 import MenuIcon from "@mui/icons-material/Menu";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -504,6 +505,13 @@ const Navbar = () => {
                             <SettingsIcon fontSize="small" />
                           </ListItemIcon>
                           Settings
+                        </MenuItem>
+
+                        <MenuItem onClick={() => { handleMenuClose(); navigate('/notifications'); }}>
+                          <ListItemIcon>
+                            <NotificationsIcon fontSize="small" />
+                          </ListItemIcon>
+                          Notifications
                         </MenuItem>
 
                         <MenuItem onClick={handleLogout}>

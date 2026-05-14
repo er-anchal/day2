@@ -9,12 +9,6 @@ const PricingSchema = new mongoose.Schema(
       index: true,
     },
 
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
     planName: {
       type: String,
       enum: ["FREE", "PRO", "ENTERPRISE"], 

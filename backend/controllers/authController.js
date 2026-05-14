@@ -2,11 +2,65 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import Pricing from "../models/Pricing.js";
+import Notification from "../models/Notification.js";
+
+// ─────────── Shared Birthday Notification Helper ───────────
+export const checkAndCreateBirthdayNotification = async (userId, dob) => {
+  if (!dob) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dobDate = new Date(dob);
+  // Revert to local time extraction - Mongoose saves it as Local Midnight, so UTC shifts it back by 1 day!
+  const birthMonth = dobDate.getMonth(); 
+  const birthDay = dobDate.getDate();
+
+  // Build this year's birthday date
+  let birthday = new Date(today.getFullYear(), birthMonth, birthDay);
+  birthday.setHours(0, 0, 0, 0);
+
+  // If already passed this year, shift to next year
+  if (birthday < today) {
+    birthday = new Date(today.getFullYear() + 1, birthMonth, birthDay);
+    birthday.setHours(0, 0, 0, 0);
+  }
+
+  const diffDays = Math.round((birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Only notify within the 3-day window (diffDays 0 = birthday itself)
+  if (diffDays < 0 || diffDays > 3) return;
+
+  const expectedMessage =
+    diffDays === 0
+      ? "🎂 Happy Birthday! Wishing you an amazing day!"
+      : `🎉 Your birthday is coming up in ${diffDays} day(s)! Get ready to celebrate!`;
+
+  // Dedup: ensure THIS EXACT message only comes ONCE this year.
+  // This allows a countdown (3 days, 2 days, etc) but prevents duplicates of the same message.
+  const startOfYear = new Date(today.getFullYear(), 0, 1);
+  startOfYear.setHours(0, 0, 0, 0);
+
+  const existingNotif = await Notification.findOne({
+    userId,
+    type: "BIRTHDAY",
+    message: expectedMessage,
+    createdAt: { $gte: startOfYear },
+  });
+
+  if (!existingNotif) {
+    await Notification.create({
+      userId,
+      type: "BIRTHDAY",
+      message: expectedMessage,
+    });
+  }
+};
 
 // POST /api/auth/register
 export const registerUser = async (req, res) => {
   try {
-    const { name, phone, email, password } = req.body;
+    const { name, phone, email, password, role, dob } = req.body;
 
     // 1️⃣ Validate input
     if (!name || !phone || !email || !password) {
@@ -29,6 +83,18 @@ export const registerUser = async (req, res) => {
         success: false,
         message: "Password must be at least 6 characters",
       });
+    }
+
+    // Validate DOB year (must be strictly less than current year)
+    if (dob) {
+      const dobYear = new Date(dob).getFullYear();
+      const currentYear = new Date().getFullYear();
+      if (dobYear >= currentYear) {
+        return res.status(400).json({
+          success: false,
+          message: `Birth year must be less than ${currentYear}.`,
+        });
+      }
     }
 
     // 2️⃣ Check if user exists by email
@@ -55,6 +121,8 @@ export const registerUser = async (req, res) => {
       phone,
       email,
       password,
+      role,
+      dob,
     });
 
     const pricingData = await Pricing.create({
@@ -81,6 +149,7 @@ export const registerUser = async (req, res) => {
         name: user.name,
         phone: user.phone,
         email: user.email,
+        role: user.role,
         plan: user.plan,
       },
       pricing: {
@@ -133,6 +202,22 @@ export const loginUser = async (req, res) => {
     // 4️⃣ Update last login
     user.lastLoginAt = new Date();
     await user.save();
+
+    // 🌟 System Login Notification Logic
+    const time = new Date().toLocaleString();
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    const locationStr = (ip === '::1' || ip === '127.0.0.1') ? 'localhost' : `IP: ${ip}`;
+    
+    await Notification.create({
+      userId: user._id,
+      type: "SYSTEM",
+      message: `New login to your account at ${time} from ${locationStr}`,
+    });
+
+    // 🌟 Birthday Notification Logic
+    if (user.dob) {
+      await checkAndCreateBirthdayNotification(user._id, user.dob);
+    }
 
     // 5️⃣ Generate JWT
     const token = jwt.sign(
@@ -187,6 +272,7 @@ export const getProfile = async (req, res) => {
         phone: user.phone,
         email: user.email,
         avatar: user.avatar,
+        dob: user.dob,
         plan: user.plan,
         preferences: user.preferences,
         role: user.role,
@@ -204,7 +290,7 @@ export const getProfile = async (req, res) => {
 // PUT /api/auth/me
 export const updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = req.user;
 
     if (!user) {
       return res.status(404).json({
@@ -213,7 +299,7 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const { name, phone, email } = req.body;
+    const { name, phone, email, dob } = req.body;
 
     /* ---------------- ALLOWED FIELDS ONLY ---------------- */
     const updates = {};
@@ -221,6 +307,19 @@ export const updateProfile = async (req, res) => {
     if (name) updates.name = name;
     if (email) updates.email = email;
     if (phone) updates.phone = phone;
+    if (dob) updates.dob = dob;
+
+    /* ---------------- DOB VALIDATION ---------------- */
+    if (dob) {
+      const dobYear = new Date(dob).getFullYear();
+      const currentYear = new Date().getFullYear();
+      if (dobYear >= currentYear) {
+        return res.status(400).json({
+          success: false,
+          message: `Birth year must be less than ${currentYear}.`,
+        });
+      }
+    }
 
     /* ---------------- PHONE VALIDATION ---------------- */
     if (phone && !/^[0-9]{10}$/.test(phone)) {
@@ -261,22 +360,25 @@ export const updateProfile = async (req, res) => {
     }
 
     /* ---------------- APPLY UPDATES SAFELY ---------------- */
-    Object.assign(user, updates);
-
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
 
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
       user: {
-        id: user._id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        avatar: user.avatar,
-        plan: user.plan,
-        preferences: user.preferences,
-        role: user.role,
+        id: updatedUser._id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        dob: updatedUser.dob,
+        plan: updatedUser.plan,
+        preferences: updatedUser.preferences,
+        role: updatedUser.role,
       },
     });
   } catch (error) {

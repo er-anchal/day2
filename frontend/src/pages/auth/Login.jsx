@@ -37,7 +37,7 @@ const Login = () => {
 
       // ADMIN
       if (res.data.user.role === "ADMIN") {
-        navigate("/");
+        navigate("/templates");
       }
 
       // USER
