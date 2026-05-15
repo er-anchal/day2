@@ -32,6 +32,7 @@ import FaqPage from "./pages/FaqPage";
 import AdminFaqPage from "./pages/AdminFaqPage";
 import AdminQueriesPage from "./pages/AdminQueriesPage";
 import UserDashboard from "./pages/UserDashboard";
+import VideoEditorPage from "./pages/VideoEditorPage";
 // import CreateReel from "./pages/CreateReel";
 // import History from "./pages/History";
 // import Catalogue from "./pages/Catalogue";
@@ -117,6 +118,9 @@ function App() {
 
           <Route path="/dashboard" element={<UserDashboard />} />
         </Route>
+        
+        {/* STANDALONE ROUTES */}
+        <Route path="/video-editor" element={<VideoEditorPage />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<AdminLayout />}>
