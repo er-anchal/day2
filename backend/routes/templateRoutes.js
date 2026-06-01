@@ -4,7 +4,7 @@ import {
   getTemplateCategories,
   getTemplatesByCategorySlug,
   getTemplateById,
-  streamVideo, // ADD THIS
+  getDiskTemplates,
 } from "../controllers/templateController.js";
 
 import {
@@ -12,11 +12,11 @@ import {
   authMiddleware,
 } from "../middleware/authMiddleware.js";
 
-// import { globalSearch } from "../controllers/globalSearch.js";
+import { globalSearch } from "../controllers/globalSearch.js";
 
 const router = express.Router();
 
-router.get("/stream/:id", streamVideo);
+router.get("/disk-templates", authMiddleware, getDiskTemplates);
 
 router.get("/by-category/:slug", authMiddleware, getTemplatesByCategorySlug);
 
@@ -26,6 +26,6 @@ router.get("/", authMiddleware, adminMiddleware, getTemplateCategories);
 
 router.delete("/:id", authMiddleware, adminMiddleware, deleteTemplate);
 
-// router.get("/search", authMiddleware, globalSearch);
+router.get("/search", globalSearch);
 
 export default router;

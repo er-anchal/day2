@@ -170,6 +170,22 @@ export default function TemplatesPage() {
 
     fetchTemplates();
   }, [categories]);
+  const showShotTemplate = () => {
+    if (!activeTemplate) return;
+
+    // Check if shots exist
+    if (
+      activeTemplate.shots &&
+      Array.isArray(activeTemplate.shots) &&
+      activeTemplate.shots.length > 0
+    ) {
+      navigate(`/template-shots/${activeTemplate._id}`);
+    } else {
+      alert("No shot images available for this template.");
+    }
+
+    closeMenu();
+  };
 
   /* ---------------- MENU ---------------- */
   const openMenu = (e, template) => {
@@ -423,7 +439,6 @@ export default function TemplatesPage() {
           </Button>
         </Stack>
       </Stack>
-
       {/* LOADING */}
       {/* DISPLAY CATEGORIES → SUBCATEGORIES → TEMPLATES */}
       {loading ? (
@@ -522,11 +537,7 @@ export default function TemplatesPage() {
                         <Box key={template._id}>
                           <Card
                             onClick={() =>
-                              navigate(
-                                `/design/new?bg=${encodeURIComponent(
-                                  `${TEMP_URL}/uploads/${category.slug}/${subcategoryName}/${template.fileName}`,
-                                )}&templateId=${template._id}`,
-                              )
+                              navigate(`/template-shots/${template._id}`)
                             }
                             sx={{
                               width: 250,
@@ -593,7 +604,18 @@ export default function TemplatesPage() {
         })
       )}
       {/* MENU */}
+      // Replace your Menu section with this
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
+        {/* Show option only if shots exist */}
+        {activeTemplate?.shots &&
+          Array.isArray(activeTemplate.shots) &&
+          activeTemplate.shots.length > 0 && (
+            <MenuItem onClick={showShotTemplate}>
+              <EditIcon sx={{ mr: 1 }} />
+              Show
+            </MenuItem>
+          )}
+
         <MenuItem onClick={deleteTemplate} sx={{ color: "red" }}>
           <DeleteIcon sx={{ mr: 1 }} />
           Delete

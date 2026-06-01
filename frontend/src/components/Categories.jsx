@@ -217,11 +217,7 @@ export default function Categories({
                       <Box key={t._id} sx={{ px: 1 }}>
                         <Box
                           onClick={() =>
-                            navigate(
-                              `/design/new?bg=${encodeURIComponent(
-                                imageUrl,
-                              )}&templateId=${t._id}`,
-                            )
+                            navigate(`/template-shots/${t._id}`)
                           }
                           sx={{
                             height: 220,

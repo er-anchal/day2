@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Box,
@@ -17,11 +17,15 @@ import {
   Typography,
   MenuItem,
   ListItemIcon,
+  Collapse,
 } from "@mui/material";
 import { useAuth } from "../pages/auth/AuthContext";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import MenuIcon from "@mui/icons-material/Menu";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -141,10 +145,104 @@ const navMotion = {
   },
 };
 
+const NavbarDropdown = ({ item }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const theme = useTheme();
+  const navigate = useNavigate();
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleItemClick = (path) => {
+    navigate(path);
+    handleClose();
+  };
+
+  return (
+    <>
+      <Button
+        id={`dropdown-button-${item.label.toLowerCase()}`}
+        aria-controls={open ? `dropdown-menu-${item.label.toLowerCase()}` : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={handleClick}
+        endIcon={<KeyboardArrowDownIcon />}
+        sx={{
+          color: theme.palette.background.paper,
+          mx: 1,
+          textTransform: 'capitalize',
+          fontWeight: 500,
+          transition: "transform 0.2s ease",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            bgcolor: 'rgba(255, 255, 255, 0.08)'
+          }
+        }}
+      >
+        {item.label}
+      </Button>
+      <Menu
+        id={`dropdown-menu-${item.label.toLowerCase()}`}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          'aria-labelledby': `dropdown-button-${item.label.toLowerCase()}`,
+        }}
+        PaperProps={{
+          sx: {
+            mt: 0.5,
+            minWidth: 160,
+            bgcolor: theme.palette.primary.main,
+            color: theme.palette.background.paper,
+            boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+          }
+        }}
+      >
+        {item.children.map((child) => (
+          <MenuItem
+            key={child.label}
+            onClick={() => handleItemClick(child.path)}
+            sx={{
+              py: 1,
+              px: 2.5,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              color: theme.palette.background.paper,
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.12)'
+              }
+            }}
+          >
+            {child.icon && (
+              <Box sx={{ display: 'flex', color: theme.palette.secondary.main }}>
+                {child.icon}
+              </Box>
+            )}
+            {child.label}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+};
+
 const Navbar = () => {
-  const { token, logout, user } = useAuth();
+  const { token, logout, user, allowedModules } = useAuth();
   const isLoggedIn = !!token;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER ADMIN";
+
+
   const welcomeMessage = isLoggedIn ? `Welcome, ${user?.name || "User"}` : "";
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -163,6 +261,7 @@ const Navbar = () => {
     secondaryText,
   } = useThemeContext();
   const handleMenuOpen = (event) => {
+    if (event && event.detail === 0) return; // Prevent synthetic/programmatic clicks from password managers or autofill extensions on mount
     setAnchorEl(event.currentTarget);
   };
 
@@ -191,8 +290,81 @@ const Navbar = () => {
     logout();
     navigate("/login");
   };
+  const [openDropdowns, setOpenDropdowns] = useState({});
+
+  const toggleDropdown = (label) => {
+    setOpenDropdowns((prev) => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
+
+  const isSuperAdmin = user?.role === "SUPER ADMIN";
+
+  const allowedMasterChildren = [
+    { label: "CAD Catalog (Admin)", path: "/admin/jewellery-configurator", icon: <DashboardIcon /> },
+    { label: "Templates", path: "/templates", icon: <DashboardIcon /> },
+    { label: "Template Shots", path: "/template-shots", icon: <DashboardIcon /> },
+    { label: "Categories", path: "/categories", icon: <CategoryIcon /> },
+    { label: "Subcategories", path: "/subcategories", icon: <CategoryIcon /> },
+    { label: "Chatbot Q&A", path: "/admin/chatbot-flows", icon: <CategoryIcon /> },
+    { label: "Chatbot Analytics", path: "/admin/chatbot-analytics", icon: <DashboardIcon /> },
+    { label: "Chatbot Conversations", path: "/admin/chatbot-conversations", icon: <CategoryIcon /> },
+  ].filter((item) => {
+    if (isSuperAdmin) return true;
+    const cleanLabel = item.label.toLowerCase().trim();
+    if (cleanLabel === "cad catalog (admin)") return true;
+    if (cleanLabel === "template shots") {
+      return allowedModules.includes("templates");
+    }
+    if (cleanLabel === "chatbot q&a") {
+      return allowedModules.includes("chatbot") || allowedModules.includes("chatbot q&a");
+    }
+    if (cleanLabel === "chatbot analytics") {
+      return allowedModules.includes("chatbot") || allowedModules.includes("chatbot analytics");
+    }
+    if (cleanLabel === "chatbot conversations") {
+      return allowedModules.includes("chatbot") || allowedModules.includes("chatbot conversations");
+    }
+    return allowedModules.includes(cleanLabel);
+  });
+
+  const allowedHistoryChildren = [
+    { label: "My Designs", path: "/my-designs", icon: <DesignServicesIcon /> },
+    { label: "Favorites", path: "/favorites", icon: <Favorite /> },
+    { label: "My Magazines", path: "/my-magazines", icon: <ImportContacts /> },
+  ].filter((item) => {
+    if (isSuperAdmin) return true;
+    return allowedModules.includes(item.label.toLowerCase().trim());
+  });
+
+  // Other dynamic items (which are not part of Master or History dropdowns)
+  const otherAllowedItems = [
+    { label: "Generate", path: "/dashboard", icon: <AutoAwesome /> },
+    { label: "Create Reel", path: "/create-reel", icon: <VideocamOutlinedIcon /> },
+    { label: "Catalogue", path: "/catalogue", icon: <MenuBookOutlinedIcon /> },
+    { label: "User Creation", path: "/usercreation", icon: <UsbRounded /> },
+    { label: "Jewellery Generator", path: "/jewellery-editor", icon: <AutoAwesome /> },
+    { label: "3D Configurator", path: "/jewellery-configurator", icon: <AutoAwesome /> },
+  ].filter((item) => {
+    if (isSuperAdmin) return true;
+    const cleanLabel = item.label.toLowerCase().trim();
+    if (cleanLabel === "jewellery generator" || cleanLabel === "3d configurator") return true;
+    return allowedModules.includes(cleanLabel);
+  });
+
+
   const visibleNavItems = isLoggedIn
-    ? [...commonNavItems, ...(isAdmin ? adminNavItems : userNavItems)]
+    ? [
+        ...commonNavItems,
+        ...(allowedMasterChildren.length > 0
+          ? [{ label: "Master", isDropdown: true, children: allowedMasterChildren }]
+          : []),
+        ...(allowedHistoryChildren.length > 0
+          ? [{ label: "History", isDropdown: true, children: allowedHistoryChildren }]
+          : []),
+        ...otherAllowedItems
+      ]
     : commonNavItems;
   // Drawer content
   const drawer = (
@@ -205,7 +377,6 @@ const Navbar = () => {
         borderRadius: 0, // Remove side rounding
       }}
       role="presentation"
-      onClick={handleDrawerToggle}
     >
       <Box sx={{ my: 2 }}>
         <Logo
@@ -221,80 +392,78 @@ const Navbar = () => {
       )}
 
       <List>
-        {visibleNavItems.map((item) => (
-          <ListItemButton
-            key={item.label}
-            component={NavLink}
-            to={item.path}
-            end={item.path === "/"}
-            sx={{
-              color: theme.palette.background.paper,
-              "&.active": {
-                bgcolor: theme.palette.secondary.main,
-                fontWeight: "bold",
-              },
-            }}
-          >
-            {item.icon && (
-              <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
-                {item.icon}
-              </Box>
-            )}
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        ))}
-
-        <Divider sx={{ my: 1, bgcolor: bgColor }} />
-
-        {!isLoggedIn ? (
-          <>
-            <ListItemButton
-              component={NavLink}
-              to="/login"
-              sx={{
-                color: theme.palette.background.paper,
-                "&.active": { bgcolor: theme.palette.secondary.main },
-              }}
-            >
-              <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
-                <LoginIcon />
-              </Box>
-              <ListItemText primary="Login" />
-            </ListItemButton>
-            <ListItemButton
-              component={NavLink}
-              to="/register"
-              sx={{
-                color: theme.palette.background.paper,
-                "&.active": { bgcolor: theme.palette.secondary.main },
-              }}
-            >
-              <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
-                <PersonAddIcon />
-              </Box>
-              <ListItemText primary="Register" />
-            </ListItemButton>
-          </>
-        ) : (
-          <>
-            {/* <ListItemButton
-              component={NavLink}
-              to="/profile"
-              sx={{
-                color: theme.palette.background.paper,
-                "&.active": { bgcolor: theme.palette.secondary.main },
-                }}
+        {visibleNavItems.map((item) => {
+          if (item.isDropdown) {
+            const isDropdownOpen = !!openDropdowns[item.label];
+            return (
+              <React.Fragment key={item.label}>
+                <ListItemButton
+                  onClick={() => toggleDropdown(item.label)}
+                  sx={{
+                    color: theme.palette.background.paper,
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.08)'
+                    }
+                  }}
                 >
-                <ListItemText primary="Profile" />
-                </ListItemButton> */}
-            <ListItemButton onClick={handleLogout}>
-              <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
-                <LogoutIcon />
-              </Box>
-              <ListItemText primary="Logout" />
+                  <ListItemText primary={item.label} />
+                  {isDropdownOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </ListItemButton>
+                <Collapse in={isDropdownOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.children.map((child) => (
+                      <ListItemButton
+                        key={child.label}
+                        component={NavLink}
+                        to={child.path}
+                        onClick={handleDrawerToggle}
+                        sx={{
+                          pl: 4,
+                          color: theme.palette.background.paper,
+                          "&.active": {
+                            bgcolor: theme.palette.secondary.main,
+                            fontWeight: "bold",
+                          },
+                        }}
+                      >
+                        {child.icon && (
+                          <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
+                            {child.icon}
+                          </Box>
+                        )}
+                        <ListItemText primary={child.label} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Collapse>
+              </React.Fragment>
+            );
+          }
+
+          return (
+            <ListItemButton
+              key={item.label}
+              component={NavLink}
+              to={item.path}
+              end={item.path === "/"}
+              onClick={handleDrawerToggle}
+              sx={{
+                color: theme.palette.background.paper,
+                "&.active": {
+                  bgcolor: theme.palette.secondary.main,
+                  fontWeight: "bold",
+                },
+              }}
+            >
+              {item.icon && (
+                <Box sx={{ mr: 2, display: "flex", alignItems: "center" }}>
+                  {item.icon}
+                </Box>
+              )}
+              <ListItemText primary={item.label} />
             </ListItemButton>
-          </>
-        )}
+          );
+        })}
       </List>
     </Box>
   );
@@ -354,27 +523,32 @@ const Navbar = () => {
               </Typography>
             )}
 
-            {visibleNavItems.map((item) => (
-              <Button
-                key={item.label}
-                component={NavLink}
-                to={item.path}
-                end={item.path === "/"}
-                sx={{
-                  color: theme.palette.background.paper,
-                  mx: 1,
-                  ...navMotion, // ✅ THIS WAS MISSING
-                  "&.active": {
-                    transform: "translateY(-2px)",
-                    borderBottom: `2px solid ${theme.palette.secondary.main}`,
-                    borderRadius: 0,
-                    fontWeight: "bold",
-                  },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
+            {visibleNavItems.map((item) => {
+              if (item.isDropdown) {
+                return <NavbarDropdown key={item.label} item={item} />;
+              }
+              return (
+                <Button
+                  key={item.label}
+                  component={NavLink}
+                  to={item.path}
+                  end={item.path === "/"}
+                  sx={{
+                    color: theme.palette.background.paper,
+                    mx: 1,
+                    ...navMotion,
+                    "&.active": {
+                      transform: "translateY(-2px)",
+                      borderBottom: `2px solid ${theme.palette.secondary.main}`,
+                      borderRadius: 0,
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
 
             {!isLoggedIn ? (
               <>
@@ -434,7 +608,7 @@ const Navbar = () => {
                 >
                   Profile
                 </Button> */}
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={1.5} alignItems="center">
                   <Button
                     onClick={toggleTheme}
                     sx={{
@@ -442,13 +616,43 @@ const Navbar = () => {
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      bgcolor: darkMode ? "#141821" : "#f5f5f5",
-                      color: textColor,
-                      mx: 1,
+                      bgcolor: darkMode ? "#141821" : "rgba(255,255,255,0.08)",
+                      color: theme.palette.background.paper,
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
                     }}
                   >
                     {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                   </Button>
+
+                  {isLoggedIn && (
+                    <>
+                      <IconButton
+                        onClick={() => navigate("/notifications")}
+                        sx={{
+                          color: theme.palette.background.paper,
+                          bgcolor: "rgba(255,255,255,0.08)",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        <NotificationsIcon />
+                      </IconButton>
+
+                      <IconButton
+                        onClick={() => navigate("/settings")}
+                        sx={{
+                          color: theme.palette.background.paper,
+                          bgcolor: "rgba(255,255,255,0.08)",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        <SettingsIcon />
+                      </IconButton>
+                    </>
+                  )}
                   {/* <Box
                     sx={{
                       px: 2,
@@ -498,20 +702,6 @@ const Navbar = () => {
                             <PersonIcon fontSize="small" />
                           </ListItemIcon>
                           Profile
-                        </MenuItem>
-
-                        <MenuItem onClick={handleSettings}>
-                          <ListItemIcon>
-                            <SettingsIcon fontSize="small" />
-                          </ListItemIcon>
-                          Settings
-                        </MenuItem>
-
-                        <MenuItem onClick={() => { handleMenuClose(); navigate('/notifications'); }}>
-                          <ListItemIcon>
-                            <NotificationsIcon fontSize="small" />
-                          </ListItemIcon>
-                          Notifications
                         </MenuItem>
 
                         <MenuItem onClick={handleLogout}>

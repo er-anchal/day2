@@ -22,7 +22,7 @@ export default function Pricing() {
 
   const fetchPlans = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/subscription-plans");
+      const { data } = await axios.get("http://localhost:5001/api/subscription-plans");
       setPlans(data);
     } catch (error) {
       console.error("Error fetching plans:", error);

@@ -19,6 +19,7 @@ import {
   DialogActions,
   useTheme,
   Stack,
+  Card,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -128,17 +129,9 @@ const CategoriesPage = () => {
     }
   };
 
-  /* ---------------- GUARD ---------------- */
-  if (!isAdmin) {
-    return (
-      <Typography color="error" sx={{ p: 4 }}>
-        You do not have permission to access this page.
-      </Typography>
-    );
-  }
-
   /* ---------------- UI ---------------- */
   return (
+
     <Box sx={{ px: 4, py: 3 }}>
       <Typography variant="h5" fontWeight={700} mb={2} textAlign={"center"}>
         Categories
@@ -184,10 +177,14 @@ const CategoriesPage = () => {
       <Paper
         sx={{
           p: 2,
+          bgcolor: cardColor,
+          color: textColor,
+          border: `1px solid ${borderColor}`,
+          borderRadius: 2,
         }}
-        elevation={3}
+        elevation={darkMode ? 0 : 3}
       >
-        <TableContainer>
+        <TableContainer sx={{ display: { xs: "none", lg: "block" } }}>
           <Table
             sx={{
               border: "1px solid",
@@ -221,7 +218,7 @@ const CategoriesPage = () => {
             <TableBody>
               {categories.map((cat) => (
                 <TableRow key={cat._id} hover>
-                  <TableCell>{cat.name}</TableCell>
+                  <TableCell sx={{ color: textColor }}>{cat.name}</TableCell>
                   {/* <TableCell>{cat.slug}</TableCell> */}
                   <TableCell>
                     <Stack
@@ -270,7 +267,7 @@ const CategoriesPage = () => {
 
               {!categories.length && (
                 <TableRow>
-                  <TableCell colSpan={3} align="center">
+                  <TableCell colSpan={3} align="center" sx={{ color: textColor }}>
                     No categories found
                   </TableCell>
                 </TableRow>
@@ -278,6 +275,98 @@ const CategoriesPage = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* MOBILE & TABLET CARD VIEW */}
+        <Box
+          sx={{
+            display: { xs: "grid", lg: "none" },
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+            gap: 2.5,
+          }}
+        >
+          {!categories.length ? (
+            <Box sx={{ py: 4, textAlign: "center", width: "100%", gridColumn: "1 / -1" }}>
+              <Typography color="text.secondary">No categories found</Typography>
+            </Box>
+          ) : (
+            categories.map((cat) => (
+              <Card
+                key={cat._id}
+                sx={{
+                  bgcolor: darkMode ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.01)",
+                  color: textColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 3,
+                  boxShadow: "none",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    borderColor: darkMode ? "#c6ff00" : "#1976d2",
+                    boxShadow: darkMode
+                      ? "0 4px 20px rgba(198, 255, 0, 0.08)"
+                      : "0 4px 20px rgba(25, 118, 210, 0.08)",
+                  },
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  p: 2.5,
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+                  {cat.name}
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 1.5,
+                    borderTop: `1px solid ${borderColor}`,
+                    pt: 1.5,
+                  }}
+                >
+                  <IconButton
+                    onClick={() => {
+                      document.activeElement.blur();
+                      setSelected(cat);
+                      setEditName(cat.name);
+                      setEditOpen(true);
+                    }}
+                    sx={{
+                      backgroundColor: theme.palette.info.main,
+                      color: theme.palette.common.white,
+                      "&:hover": {
+                        backgroundColor: theme.palette.info.dark,
+                        transform: "scale(1.05)",
+                      },
+                      transition: "transform 0.2s, background-color 0.2s",
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      document.activeElement.blur();
+                      setSelected(cat);
+                      setDeleteOpen(true);
+                    }}
+                    sx={{
+                      backgroundColor: theme.palette.error.main,
+                      color: theme.palette.common.white,
+                      "&:hover": {
+                        backgroundColor: theme.palette.error.dark,
+                        transform: "scale(1.05)",
+                      },
+                      transition: "transform 0.2s, background-color 0.2s",
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Card>
+            ))
+          )}
+        </Box>
       </Paper>
 
       {/* EDIT DIALOG */}

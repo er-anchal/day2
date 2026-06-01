@@ -2,6 +2,8 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Box } from "@mui/material";
 import Navbar from "./components/Navbar";
 import AdminLayout from "./components/AdminLayout";
+import Chatbot from "./components/Chatbot";
+
 
 import { useThemeContext } from "./context/ThemeContext";
 
@@ -10,11 +12,12 @@ import Register from "./pages/auth/Register";
 import Profile from "./pages/Profile";
 import Home from "./pages/Home";
 import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
 // import Editor from "./pages/Editor"/;
 import AdminRoute from "./pages/auth/AdminRoute";
 import TemplatesPage from "./pages/Templates";
 // import UserDesigns from "./pages/UserDesigns";
-// import DesignFrameCanvas from "./components/DesignFrameCanvas";
+import DesignFrameCanvas from "./components/DesignFrameCanvas";
 import CategoriesPage from "./pages/CategoriesPage";
 import SubcategoriesPage from "./pages/SubcategoriesPage";
 import AdminPricingPage from "./pages/AdminPricingPage";
@@ -29,14 +32,24 @@ import AdminPricingPage from "./pages/AdminPricingPage";
 import PricingPage from "./pages/PricingPage";
 // import BlogPage from "./pages/BlogPage";
 import FaqPage from "./pages/FaqPage";
+import AddTemplatePage from "./pages/AddTemplatePage";
+import TemplateShotsPage from "./pages/TemplateShotsPage";
 import AdminFaqPage from "./pages/AdminFaqPage";
 import AdminQueriesPage from "./pages/AdminQueriesPage";
 import UserDashboard from "./pages/UserDashboard";
 import VideoEditorPage from "./pages/VideoEditorPage";
+import DepthEditorPage from "./pages/DepthEditorPage";
+import EnhancerPage from "./pages/EnhancerPage";
+import JewelleryEditorPage from "./pages/JewelleryEditorPage";
+import ProductConfigurator from "./pages/ProductConfigurator";
 // import CreateReel from "./pages/CreateReel";
 // import History from "./pages/History";
-// import Catalogue from "./pages/Catalogue";
-// import UserCreation from "./pages/UserCreation";
+import Catalogue from "./pages/Catalogue";
+import UserCreation from "./pages/UserCreation";
+import RoleAccess from "./pages/RoleAccess";
+import AdminChatbotFlows from "./pages/AdminChatbotFlows";
+import ChatbotAnalytics from "./pages/ChatbotAnalytics";
+import ChatbotConversations from "./pages/ChatbotConversations";
 
 /* ---------------- CANVAS LAYOUT ---------------- */
 function CanvasLayout({ children }) {
@@ -107,6 +120,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} /> 
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/settings" element={<Settings />} />
           {/* 
           <Route
             path="/editor/:templateId"
@@ -114,13 +128,33 @@ function App() {
           /> */}
           {/* <Route path="/create-reel" element={<CreateReel />} /> */}
           {/* <Route path="/history" element={<History />} /> */}
-          {/* <Route path="/catalogue" element={<Catalogue />} /> */}
+          <Route path="/catalogue" element={<Catalogue />} />
 
-          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route
+            path="/dashboard"
+            element={
+              <AdminRoute>
+                <UserDashboard />
+              </AdminRoute>
+            }
+          />
+
         </Route>
         
         {/* STANDALONE ROUTES */}
         <Route path="/video-editor" element={<VideoEditorPage />} />
+        <Route path="/depth-editor" element={<DepthEditorPage />} />
+        <Route path="/enhancer"     element={<EnhancerPage />} />
+        <Route path="/jewellery-editor" element={<JewelleryEditorPage />} />
+        <Route path="/jewellery-configurator" element={<ProductConfigurator isAdminView={false} />} />
+        <Route
+          path="/admin/jewellery-configurator"
+          element={
+            <AdminRoute>
+              <ProductConfigurator isAdminView={true} />
+            </AdminRoute>
+          }
+        />
 
         {/* ADMIN ROUTES */}
         <Route element={<AdminLayout />}>
@@ -148,14 +182,30 @@ function App() {
               </AdminRoute>
             }
           />
-          {/* <Route
+          <Route
+            path="/template-shots"
+            element={
+              <AdminRoute>
+                <TemplateShotsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/template-shots/:templateId"
+            element={
+              <AdminRoute>
+                <TemplateShotsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/templates/add"
             element={
               <AdminRoute>
                 <AddTemplatePage />
               </AdminRoute>
             }
-          /> */}
+          />
           <Route
             path="/admin/pricing"
             element={
@@ -180,38 +230,80 @@ function App() {
               </AdminRoute>
             }
           />
+          <Route
+            path="/admin/chatbot-flows"
+            element={
+              <AdminRoute>
+                <AdminChatbotFlows />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/chatbot-analytics"
+            element={
+              <AdminRoute>
+                <ChatbotAnalytics />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/chatbot-conversations"
+            element={
+              <AdminRoute>
+                <ChatbotConversations />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/usercreation"
+            element={
+              <AdminRoute>
+                <UserCreation />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/roleaccess"
+            element={
+              <AdminRoute>
+                <RoleAccess />
+              </AdminRoute>
+            }
+          />
         </Route>
 
         {/* CANVAS ROUTES */}
-          {/* <Route
-            path="/design/:templateId"
-            element={
-              <CanvasLayout>
-                <DesignFrameCanvas />
-              </CanvasLayout>
-            }
-          />
-          <Route
-            path="/design/new"
-            element={
-              <CanvasLayout>
-                <DesignFrameCanvas />
-              </CanvasLayout>
-            }
-          />
-          <Route
-            path="/design/edit/:designId"
-            element={
-              <CanvasLayout>
-                <DesignFrameCanvas />
-              </CanvasLayout>
-            }
-          />
- */}
+        <Route
+          path="/design/:templateId"
+          element={
+            <CanvasLayout>
+              <DesignFrameCanvas />
+            </CanvasLayout>
+          }
+        />
+        <Route
+          path="/design/new"
+          element={
+            <CanvasLayout>
+              <DesignFrameCanvas />
+            </CanvasLayout>
+          }
+        />
+        <Route
+          path="/design/edit/:designId"
+          element={
+            <CanvasLayout>
+              <DesignFrameCanvas />
+            </CanvasLayout>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Chatbot />
     </Box>
   );
 }
+
 
 export default App;

@@ -19,6 +19,7 @@ import {
   useTheme,
   Stack,
   MenuItem,
+  Card,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -136,17 +137,9 @@ const SubCategoryAdmin = () => {
     }
   };
 
-  /* ---------------- GUARD ---------------- */
-  if (!isAdmin) {
-    return (
-      <Typography color="error" sx={{ p: 4 }}>
-        You do not have permission to access this page.
-      </Typography>
-    );
-  }
-
   /* ---------------- UI ---------------- */
   return (
+
     <Box sx={{ px: 4, py: 3 }}>
       <Typography variant="h5" fontWeight={700} mb={2} textAlign={"center"}>
         SubCategories
@@ -196,8 +189,17 @@ const SubCategoryAdmin = () => {
       </Paper>
 
       {/* TABLE */}
-      <Paper sx={{ p: 2 }} elevation={3}>
-        <TableContainer>
+      <Paper
+        sx={{
+          p: 2,
+          bgcolor: cardColor,
+          color: textColor,
+          border: `1px solid ${borderColor}`,
+          borderRadius: 2,
+        }}
+        elevation={darkMode ? 0 : 3}
+      >
+        <TableContainer sx={{ display: { xs: "none", lg: "block" } }}>
           <Table
             sx={{
               border: "1px solid",
@@ -213,16 +215,16 @@ const SubCategoryAdmin = () => {
             >
               <TableRow>
                 <TableCell
-                  sx={{ color: "#fff", fontWeight: 600, width: "20%" }}
+                  sx={{ color: "#fff", fontWeight: 600, width: "40%" }}
                 >
                   Name
                 </TableCell>
                 <TableCell
-                  sx={{ color: "#fff", fontWeight: 600, width: "20%" }}
+                  sx={{ color: "#fff", fontWeight: 600, width: "40%" }}
                 >
                   Category
                 </TableCell>
-                <TableCell sx={{ color: "#fff", fontWeight: 600, width: "8%" }}>
+                <TableCell sx={{ color: "#fff", fontWeight: 600, width: "20%" }}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -234,8 +236,8 @@ const SubCategoryAdmin = () => {
 
                 return (
                   <TableRow key={sub._id} hover>
-                    <TableCell>{sub.name}</TableCell>
-                    <TableCell>{cat?.name || "Unknown"}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{sub.name}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{cat?.name || "Unknown"}</TableCell>
 
                     <TableCell>
                       <Stack direction="row" spacing={1}>
@@ -279,7 +281,7 @@ const SubCategoryAdmin = () => {
 
               {!subCategories.length && (
                 <TableRow>
-                  <TableCell colSpan={3} align="center">
+                  <TableCell colSpan={3} align="center" sx={{ color: textColor }}>
                     No subcategories found
                   </TableCell>
                 </TableRow>
@@ -287,6 +289,118 @@ const SubCategoryAdmin = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* MOBILE & TABLET CARD VIEW */}
+        <Box
+          sx={{
+            display: { xs: "grid", lg: "none" },
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+            gap: 2.5,
+          }}
+        >
+          {!subCategories.length ? (
+            <Box sx={{ py: 4, textAlign: "center", width: "100%", gridColumn: "1 / -1" }}>
+              <Typography color="text.secondary">No subcategories found</Typography>
+            </Box>
+          ) : (
+            subCategories.map((sub) => {
+              const cat = categories.find((c) => c._id === sub.categoryId);
+
+              return (
+                <Card
+                  key={sub._id}
+                  sx={{
+                    bgcolor: darkMode ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.01)",
+                    color: textColor,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 3,
+                    boxShadow: "none",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      borderColor: darkMode ? "#c6ff00" : "#1976d2",
+                      boxShadow: darkMode
+                        ? "0 4px 20px rgba(198, 255, 0, 0.08)"
+                        : "0 4px 20px rgba(25, 118, 210, 0.08)",
+                    },
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    p: 2.5,
+                  }}
+                >
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: "6px",
+                        bgcolor: darkMode ? "rgba(198, 255, 0, 0.1)" : "rgba(25, 118, 210, 0.08)",
+                        color: darkMode ? "#c6ff00" : "#1976d2",
+                        fontFamily: "monospace",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      {cat?.name || "Unknown Category"}
+                    </Typography>
+
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ mt: 1 }}>
+                      {sub.name}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 1.5,
+                      borderTop: `1px solid ${borderColor}`,
+                      pt: 1.5,
+                    }}
+                  >
+                    <IconButton
+                      onClick={() => {
+                        setSelected(sub);
+                        setEditName(sub.name);
+                        setEditOpen(true);
+                      }}
+                      sx={{
+                        backgroundColor: theme.palette.info.main,
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: theme.palette.info.dark,
+                          transform: "scale(1.05)",
+                        },
+                        transition: "transform 0.2s, background-color 0.2s",
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => {
+                        setSelected(sub);
+                        setDeleteOpen(true);
+                      }}
+                      sx={{
+                        backgroundColor: theme.palette.error.main,
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: theme.palette.error.dark,
+                          transform: "scale(1.05)",
+                        },
+                        transition: "transform 0.2s, background-color 0.2s",
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Card>
+              );
+            })
+          )}
+        </Box>
       </Paper>
 
       {/* EDIT DIALOG */}

@@ -1,47 +1,51 @@
-import { Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./AuthContext";
+import { Box, CircularProgress } from "@mui/material";
 
 export default function AdminRoute({ children }) {
-  const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await axios.get(`${API_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        // console.log(res.data);
-        if (res.data.user?.role === "ADMIN") {
-          setAllowed(true);
-        }
-      } catch (err) {
-        localStorage.removeItem("token");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
+  const { user, allowedPaths, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return null; // or spinner
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress sx={{ color: "#c6ff00" }} />
+      </Box>
+    );
   }
 
-  if (!allowed) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // SUPER ADMIN has bypass access to all routes to avoid configuration deadlocks
+  if (user.role === "SUPER ADMIN") {
+    return children;
+  }
+
+  // Allow all authorized administrators to access the CAD Catalog configurator page
+  const cleanPath = location.pathname.toLowerCase().trim();
+  if (cleanPath === "/admin/jewellery-configurator" && (user.role === "ADMIN" || user.role === "SUPER ADMIN")) {
+    return children;
+  }
+
+  // Verify route access against dynamic permissions matrix
+  const isAllowed = allowedPaths.some((modPath) => {
+    const currentPath = location.pathname.toLowerCase().trim();
+    return currentPath === modPath || currentPath.startsWith(modPath + "/");
+  });
+
+  if (!isAllowed) {
     return <Navigate to="/" replace />;
   }
 
   return children;
 }
+

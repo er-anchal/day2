@@ -33,7 +33,7 @@ import { useThemeContext } from "../context/ThemeContext";
 import { useAuth } from "./auth/AuthContext";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const categories = [
   "General",
@@ -254,47 +254,212 @@ const AdminFaqPage = () => {
              <CircularProgress />
           </Box>
         ) : (
-          <TableContainer component={Paper} sx={{ bgcolor: cardColor, color: textColor, borderRadius: 2 }}>
-            <Table>
-              <TableHead sx={{ bgcolor: darkMode ? "#1e293b" : "#f1f5f9" }}>
-                <TableRow>
-                  <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Title</TableCell>
-                  <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Category</TableCell>
-                  <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Status</TableCell>
-                  <TableCell sx={{ color: textColor, fontWeight: "bold", textAlign: "right" }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {faqs.length === 0 ? (
+          <>
+            {/* DESKTOP TABLE VIEW */}
+            <TableContainer
+              component={Paper}
+              sx={{
+                display: { xs: "none", lg: "block" },
+                bgcolor: cardColor,
+                color: textColor,
+                borderRadius: 2,
+              }}
+            >
+              <Table>
+                <TableHead sx={{ bgcolor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ color: textColor, py: 3 }}>
-                      No FAQs found.
-                    </TableCell>
+                    <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Title</TableCell>
+                    <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Category</TableCell>
+                    <TableCell sx={{ color: textColor, fontWeight: "bold" }}>Status</TableCell>
+                    <TableCell sx={{ color: textColor, fontWeight: "bold", textAlign: "right" }}>Actions</TableCell>
                   </TableRow>
-                ) : (
-                  faqs.map((faq) => (
-                    <TableRow key={faq._id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                      <TableCell sx={{ color: textColor }}>{faq.title}</TableCell>
-                      <TableCell sx={{ color: textColor }}>{faq.category}</TableCell>
-                      <TableCell sx={{ color: textColor }}>
-                         <Typography variant="caption" sx={{ px: 1, py: 0.5, borderRadius: 1, bgcolor: faq.isActive ? "#10b98120" : "#ef444420", color: faq.isActive ? "#10b981" : "#ef4444" }}>
-                           {faq.isActive ? "Active" : "Inactive"}
-                         </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton color="primary" onClick={() => handleOpenDialog(faq)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDeleteFaq(faq._id)}>
-                          <DeleteIcon />
-                        </IconButton>
+                </TableHead>
+                <TableBody>
+                  {faqs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center" sx={{ color: textColor, py: 3 }}>
+                        No FAQs found.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    faqs.map((faq) => (
+                      <TableRow key={faq._id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                        <TableCell sx={{ color: textColor }}>{faq.title}</TableCell>
+                        <TableCell sx={{ color: textColor }}>{faq.category}</TableCell>
+                        <TableCell sx={{ color: textColor }}>
+                           <Typography variant="caption" sx={{ px: 1, py: 0.5, borderRadius: 1, bgcolor: faq.isActive ? "#10b98120" : "#ef444420", color: faq.isActive ? "#10b981" : "#ef4444" }}>
+                             {faq.isActive ? "Active" : "Inactive"}
+                           </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton color="primary" onClick={() => handleOpenDialog(faq)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleDeleteFaq(faq._id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* MOBILE & TABLET FAQ CARDS */}
+            <Box
+              sx={{
+                display: { xs: "grid", lg: "none" },
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                gap: 3,
+              }}
+            >
+              {faqs.length === 0 ? (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    gridColumn: "1 / -1",
+                    py: 6,
+                    bgcolor: cardColor,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography color="text.secondary">No FAQs found.</Typography>
+                </Paper>
+              ) : (
+                faqs.map((faq) => {
+                  const catColors = {
+                    General: { bg: "rgba(168, 85, 247, 0.1)", text: "#a855f7" },
+                    "Product Shoot": { bg: "rgba(59, 130, 246, 0.1)", text: "#3b82f6" },
+                    Pricing: { bg: "rgba(16, 185, 129, 0.1)", text: "#10b981" },
+                    Jewellery: { bg: "rgba(245, 158, 11, 0.1)", text: "#f59e0b" },
+                    "Images & Videos": { bg: "rgba(236, 72, 153, 0.1)", text: "#ec4899" },
+                    "Account & Usage": { bg: "rgba(6, 182, 212, 0.1)", text: "#06b6d4" },
+                  };
+                  const col = catColors[faq.category] || { bg: "rgba(120, 120, 120, 0.1)", text: "text.secondary" };
+
+                  return (
+                    <Card
+                      key={faq._id}
+                      sx={{
+                        bgcolor: cardColor,
+                        color: textColor,
+                        border: `1px solid ${borderColor}`,
+                        borderRadius: 3,
+                        boxShadow: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          borderColor: darkMode ? "#c6ff00" : "#1976d2",
+                          boxShadow: darkMode
+                            ? "0 4px 20px rgba(198, 255, 0, 0.08)"
+                            : "0 4px 20px rgba(25, 118, 210, 0.08)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ p: 2.5, display: "flex", flexDirection: "column", gap: 1.5, textAlign: "left" }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography
+                            variant="caption"
+                            fontWeight={700}
+                            sx={{
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: "6px",
+                              bgcolor: col.bg,
+                              color: col.text,
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {faq.category}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1.25,
+                              py: 0.5,
+                              borderRadius: "4px",
+                              fontWeight: 600,
+                              bgcolor: faq.isActive ? "#10b98120" : "#ef444420",
+                              color: faq.isActive ? "#10b981" : "#ef4444",
+                            }}
+                          >
+                            {faq.isActive ? "Active" : "Inactive"}
+                          </Typography>
+                        </Box>
+
+                        <Typography variant="subtitle1" fontWeight={700} sx={{ lineHeight: 1.4 }}>
+                          {faq.title}
+                        </Typography>
+
+                        {faq.shortDescription && (
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", fontStyle: "italic" }}>
+                            {faq.shortDescription}
+                          </Typography>
+                        )}
+
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: `1px solid ${borderColor}`,
+                            bgcolor: darkMode ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.01)",
+                            maxHeight: 120,
+                            overflowY: "auto",
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ whiteSpace: "pre-line", fontSize: "0.825rem", lineHeight: 1.5 }}>
+                            {faq.answer}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderTop: `1px solid ${borderColor}`,
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 1,
+                          bgcolor: darkMode ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.005)",
+                        }}
+                      >
+                        <IconButton
+                          onClick={() => handleOpenDialog(faq)}
+                          sx={{
+                            bgcolor: darkMode ? "rgba(198,255,0,0.06)" : "rgba(25, 118, 210, 0.05)",
+                            color: darkMode ? "#c6ff00" : "#1976d2",
+                            "&:hover": {
+                              bgcolor: darkMode ? "rgba(198,255,0,0.15)" : "rgba(25, 118, 210, 0.12)",
+                            },
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteFaq(faq._id)}
+                          sx={{
+                            bgcolor: "rgba(211, 47, 47, 0.05)",
+                            color: "#ef4444",
+                            "&:hover": {
+                              bgcolor: "rgba(211, 47, 47, 0.15)",
+                            },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Card>
+                  );
+                })
+              )}
+            </Box>
+          </>
         )}
 
         {/* Dialog for Add/Edit FAQ */}

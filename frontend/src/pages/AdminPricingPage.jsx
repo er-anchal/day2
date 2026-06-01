@@ -35,7 +35,7 @@ export default function AdminPricingPage() {
 
   const fetchPlans = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/subscription-plans");
+      const { data } = await axios.get("http://localhost:5001/api/subscription-plans");
       setPlans(data);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -105,10 +105,10 @@ export default function AdminPricingPage() {
 
     try {
       if (editingPlan) {
-        await axios.put(`http://localhost:5000/api/subscription-plans/${editingPlan}`, formData, config);
+        await axios.put(`http://localhost:5001/api/subscription-plans/${editingPlan}`, formData, config);
         alert("Plan updated successfully");
       } else {
-        await axios.post("http://localhost:5000/api/subscription-plans", formData, config);
+        await axios.post("http://localhost:5001/api/subscription-plans", formData, config);
         alert("Plan created successfully");
       }
       resetForm();
@@ -126,7 +126,7 @@ export default function AdminPricingPage() {
 
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`http://localhost:5000/api/subscription-plans/${id}`, {
+      await axios.delete(`http://localhost:5001/api/subscription-plans/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Plan deleted successfully");

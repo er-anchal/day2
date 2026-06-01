@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemIcon, ListItemText, Divider, IconButton, Drawer, useMediaQuery, useTheme } from '@mui/material';
-import { CloudUpload, ContentCut, Crop, TextFields, FileDownload, Menu as MenuIcon, MergeType } from '@mui/icons-material';
+import { Box, Typography, Button, CircularProgress, Alert, List, ListItem, ListItemIcon, ListItemText, IconButton, Drawer, useMediaQuery, useTheme, Tooltip, Chip } from '@mui/material';
+import { CloudUpload, ContentCut, Crop, TextFields, FileDownload, Menu as MenuIcon, MergeType, Undo as UndoIcon, RestartAlt as ResetIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 import UploadView from '../components/VideoEditor/UploadView';
@@ -10,7 +10,7 @@ import AddTextView from '../components/VideoEditor/AddTextView';
 import ExportView from '../components/VideoEditor/ExportView';
 import MergeVideosView from '../components/VideoEditor/MergeVideosView'; // new module
 
-const API_BASE = 'http://localhost:5000/api/video';
+const API_BASE = 'http://localhost:5001/api/video';
 
 const VideoEditorPage = () => {
   const [activeTab, setActiveTab] = useState('upload');
@@ -20,8 +20,13 @@ const VideoEditorPage = () => {
   const [videoDimensions, setVideoDimensions] = useState({ width: 16, height: 9 });
   const [currentTime, setCurrentTime] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
-  
+
+  // Edit history for undo support
+  const [history, setHistory] = useState([]); // [{ filename, path, label }]
+  const [originalFile, setOriginalFile] = useState(null); // { filename, path }
+
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Processing Video...');
   const [error, setError] = useState('');
 
   const videoRef = useRef(null);
@@ -57,21 +62,46 @@ const VideoEditorPage = () => {
     }
   };
 
+  const pushHistory = (label) => {
+    if (serverFilename) {
+      setHistory(prev => [...prev, { filename: serverFilename, url: videoUrl, label }]);
+    }
+  };
+
   const updateVideoSource = (filename, filePath) => {
     setServerFilename(filename);
-    setVideoUrl(`http://localhost:5000/${filePath.replace(/\\/g, '/')}`);
+    setVideoUrl(`http://localhost:5001/${filePath.replace(/\\/g, '/')}`);
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setHistory(h => h.slice(0, -1));
+    setServerFilename(prev.filename);
+    setVideoUrl(prev.url);
+  };
+
+  const handleReset = () => {
+    if (!originalFile) return;
+    setHistory([]);
+    setServerFilename(originalFile.filename);
+    setVideoUrl(originalFile.url);
   };
 
   const handleUpload = async (file) => {
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Uploading video...');
     const formData = new FormData();
     formData.append('video', file);
     try {
       const res = await axios.post(`${API_BASE}/upload`, formData);
-      updateVideoSource(res.data.filename, res.data.path);
+      const src = `http://localhost:5001/${res.data.path.replace(/\\/g, '/')}`;
+      setServerFilename(res.data.filename);
+      setVideoUrl(src);
+      setOriginalFile({ filename: res.data.filename, url: src });
+      setHistory([]);
       setActiveTab('cut');
     } catch (err) {
-      setError('Failed to upload video.');
+      setError('Failed to upload video. Please ensure it is a valid video file under 500 MB.');
     } finally {
       setIsLoading(false);
     }
@@ -79,11 +109,13 @@ const VideoEditorPage = () => {
 
   const handleCut = async (startTime, endTime) => {
     if (!serverFilename) return;
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Trimming video...');
+    pushHistory('Cut');
     try {
       const res = await axios.post(`${API_BASE}/trim`, { filename: serverFilename, startTime, endTime });
       updateVideoSource(res.data.filename, res.data.path);
     } catch (err) {
+      setHistory(h => h.slice(0, -1));
       setError('Failed to cut video.');
     } finally {
       setIsLoading(false);
@@ -92,11 +124,13 @@ const VideoEditorPage = () => {
 
   const handleCrop = async (x, y, width, height) => {
     if (!serverFilename) return;
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Cropping video...');
+    pushHistory('Crop');
     try {
       const res = await axios.post(`${API_BASE}/crop`, { filename: serverFilename, x, y, width, height });
       updateVideoSource(res.data.filename, res.data.path);
     } catch (err) {
+      setHistory(h => h.slice(0, -1));
       setError('Failed to select area.');
     } finally {
       setIsLoading(false);
@@ -105,11 +139,13 @@ const VideoEditorPage = () => {
 
   const handleApplyText = async (subtitles) => {
     if (!serverFilename || subtitles.length === 0) return;
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Burning text into video...');
+    pushHistory('Add Text');
     try {
       const res = await axios.post(`${API_BASE}/subtitles`, { filename: serverFilename, subtitles });
       updateVideoSource(res.data.filename, res.data.path);
     } catch (err) {
+      setHistory(h => h.slice(0, -1));
       setError('Failed to add text to video.');
     } finally {
       setIsLoading(false);
@@ -117,11 +153,15 @@ const VideoEditorPage = () => {
   };
 
   const handleMerge = async (filenames) => {
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Merging videos...');
     try {
       const res = await axios.post(`${API_BASE}/merge`, { filenames });
-      updateVideoSource(res.data.filename, res.data.path);
-      setActiveTab('cut'); // Switch to cut after merging so they can preview/edit
+      const src = `http://localhost:5001/${res.data.path.replace(/\\/g, '/')}`;
+      setServerFilename(res.data.filename);
+      setVideoUrl(src);
+      setOriginalFile({ filename: res.data.filename, url: src });
+      setHistory([]);
+      setActiveTab('cut');
     } catch (err) {
       setError('Failed to merge videos.');
     } finally {
@@ -129,13 +169,18 @@ const VideoEditorPage = () => {
     }
   };
 
-  const handleExport = async (quality, resolution) => {
+  const handleExport = async (quality, resolution, format) => {
     if (!serverFilename) return;
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setLoadingMessage('Exporting final video...');
     try {
-      const res = await axios.post(`${API_BASE}/export`, { filename: serverFilename, quality, resolution });
+      const res = await axios.post(`${API_BASE}/export`, { filename: serverFilename, quality, resolution, format });
       const dlUrl = `${API_BASE}/download/${res.data.filename}`;
-      window.open(dlUrl, '_blank');
+      const a = document.createElement('a');
+      a.href = dlUrl;
+      a.download = res.data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (err) {
       setError('Failed to export video.');
     } finally {
@@ -150,13 +195,13 @@ const VideoEditorPage = () => {
       case 'cut':
         return <CutVideoView videoRef={videoRef} videoDuration={videoDuration} onCut={handleCut} isLoading={isLoading} />;
       case 'area':
-        return <SelectAreaView videoRef={videoRef} onApplyArea={handleCrop} isLoading={isLoading} />;
+        return <SelectAreaView videoUrl={videoUrl} onApplyArea={handleCrop} isLoading={isLoading} />;
       case 'text':
-        return <AddTextView videoRef={videoRef} currentTime={currentTime} videoDuration={videoDuration} onApplyText={handleApplyText} isLoading={isLoading} />;
+        return <AddTextView videoUrl={videoUrl} videoDuration={videoDuration} onApplyText={handleApplyText} isLoading={isLoading} />;
       case 'merge':
         return <MergeVideosView onMerge={handleMerge} isLoading={isLoading} />;
       case 'export':
-        return <ExportView onExport={handleExport} isLoading={isLoading} videoDuration={videoDuration} />;
+        return <ExportView videoUrl={videoUrl} onExport={handleExport} isLoading={isLoading} videoDuration={videoDuration} />;
       default:
         return null;
     }
@@ -166,6 +211,11 @@ const VideoEditorPage = () => {
     <Box sx={{ width: 260, bgcolor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid #e0e0e0' }}>
       <Box sx={{ p: 2, bgcolor: '#0f172a', color: 'white' }}>
         <Typography variant="h6" fontWeight="bold" letterSpacing={1.2}>VideoEditor</Typography>
+        {history.length > 0 && (
+          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 0.5 }}>
+            {history.length} edit{history.length > 1 ? 's' : ''} applied
+          </Typography>
+        )}
       </Box>
       <List sx={{ flexGrow: 1, pt: 2, px: 1 }}>
         {tabs.map((tab) => {
@@ -202,6 +252,42 @@ const VideoEditorPage = () => {
           );
         })}
       </List>
+      {/* Undo & Reset Controls */}
+      {videoUrl && (
+        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 1 }}>
+          <Tooltip title={history.length > 0 ? `Undo: ${history[history.length - 1]?.label}` : 'Nothing to undo'}>
+            <span style={{ flex: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                startIcon={<UndoIcon />}
+                disabled={history.length === 0 || isLoading}
+                onClick={handleUndo}
+                sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.75rem' }}
+              >
+                Undo
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Reset to original uploaded file">
+            <span style={{ flex: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                color="error"
+                startIcon={<ResetIcon />}
+                disabled={history.length === 0 || isLoading}
+                onClick={handleReset}
+                sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.75rem' }}
+              >
+                Reset
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+      )}
     </Box>
   );
 
@@ -230,8 +316,9 @@ const VideoEditorPage = () => {
       <Box sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
-        {/* Top Area: Video Preview */}
-        {videoUrl && activeTab !== 'upload' && activeTab !== 'merge' && (
+        {/* Top Area: Video Preview — hidden for tabs that own their own left-right layout */}
+        {videoUrl && activeTab !== 'upload' && activeTab !== 'merge'
+          && activeTab !== 'text' && activeTab !== 'area' && activeTab !== 'export' && (
           <Box sx={{ 
             position: 'relative', 
             width: '100%', 
@@ -245,8 +332,17 @@ const VideoEditorPage = () => {
             mb: 3, 
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
           }}>
-            {/* Inner tight wrapper for the overlay to exactly match video dimensions */}
-            <Box sx={{ position: 'relative', display: 'flex', maxWidth: '100%', maxHeight: '100%' }}>
+            {/* Inner tight wrapper — must have explicit dimensions so the absolute overlay has a real bounding box */}
+            <Box sx={{
+              position: 'relative',
+              display: 'flex',
+              width: '100%',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '60vh',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
               <video
                 id="main-video-preview"
                 ref={videoRef}
@@ -254,7 +350,7 @@ const VideoEditorPage = () => {
                 controls
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', display: 'block' }}
               />
               <div id="video-overlay-container" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}></div>
             </Box>
@@ -279,10 +375,10 @@ const VideoEditorPage = () => {
 
       {/* Fullscreen Loading Overlay */}
       {isLoading && (
-        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.8)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress size={60} sx={{ mb: 2, color: '#3b82f6' }} />
-          <Typography variant="h6" fontWeight="bold" color="#1e293b">Processing Video...</Typography>
-          <Typography variant="body2" color="text.secondary">This might take a few moments depending on the file size.</Typography>
+        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+          <CircularProgress size={64} thickness={4} sx={{ color: '#3b82f6' }} />
+          <Typography variant="h6" fontWeight="bold" color="white">{loadingMessage}</Typography>
+          <Typography variant="body2" sx={{ color: '#94a3b8' }}>This may take a moment depending on file size and operation.</Typography>
         </Box>
       )}
     </Box>

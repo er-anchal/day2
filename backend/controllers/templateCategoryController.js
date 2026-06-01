@@ -189,19 +189,20 @@ export const uploadCategoryImages = async (req, res) => {
 export const getLandingCategory = async (req, res) => {
   try {
     const categories = await TemplateCategory.find({ isActive: 0 })
-      .sort({ createdAt: -1 })
+      .sort({ sortOrder: 1 })
       .lean();
 
     const data = await Promise.all(
       categories.map(async (cat) => {
         const templates = await Template.find({
           categoryId: cat._id,
+          isActive: 0,
         })
           .sort({ createdAt: -1 })
-          .limit(6)
           .lean();
 
         return {
+          _id: cat._id,
           category: cat,
           templates,
         };

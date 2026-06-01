@@ -1,3 +1,4 @@
+// Force nodemon restart to apply .env key updates
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -12,12 +13,23 @@ import authRoutes from "./routes/authRoutes.js";
 import templateRoutes from "./routes/templateRoutes.js";
 import templateCategoryRoutes from "./routes/templateCategoryRoutes.js";
 import subCategoryRoutes from "./routes/subCategoryRoutes.js";
+import templateShotRoutes from "./routes/templateShotRoutes.js";
+import { globalSearch } from "./controllers/globalSearch.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import subscriptionPlanRoutes from "./routes/subscriptionPlanRoutes.js";
 import faqRoutes from "./routes/faqRoutes.js";
 import userQueryRoutes from "./routes/userQueryRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import videoRoutes from "./routes/videoRoutes.js";
+import enhancerRoutes from "./routes/enhancerRoutes.js";
+import moduleRoutes from "./routes/moduleRoutes.js";
+import roleAccessRoutes from "./routes/roleAccessRoutes.js";
+import trendyRoutes from "./routes/trendyRoutes.js";
+import jewelleryRoutes from "./routes/jewelleryRoutes.js";
+import chatbotRoutes from "./routes/chatbotRoute.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import cadRoutes from "./routes/cadRoutes.js";
+
 
 const app = express();
 app.use(cors());
@@ -38,13 +50,24 @@ app.use("/api/pricing", pricingRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/templates", templateRoutes);
+app.get("/api/search", globalSearch);
 app.use("/api/template-categories", templateCategoryRoutes);
 app.use("/api/template-subcategories", subCategoryRoutes);
+app.use("/api/template-shots", templateShotRoutes);
 app.use("/api/subscription-plans", subscriptionPlanRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/user-queries", userQueryRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/video", videoRoutes);
+app.use("/api/enhance", enhancerRoutes);
+app.use("/api/modules", moduleRoutes);
+app.use("/api/role-access", roleAccessRoutes);
+app.use("/api/trendy", trendyRoutes);
+app.use("/api/jewellery", jewelleryRoutes);
+app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/cad", cadRoutes);
+
 
 app.get("/", (req, res) => {
   res.send("Banner App Backend Running");

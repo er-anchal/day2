@@ -867,7 +867,7 @@ export default function DesignFrameCanvas() {
     formData.append("image", file);
 
     const res = await axios.post(
-      "http://localhost:5000/api/remove-bg",
+      "http://localhost:5001/api/remove-bg",
       formData,
       {
         responseType: "blob",

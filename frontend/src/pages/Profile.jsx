@@ -108,11 +108,6 @@ const Profile = () => {
       icon: <ContactMailIcon />,
       path: "/contact-us",
     },
-    {
-      label: "Notifications",
-      icon: <NotificationsIcon />,
-      path: "/notifications",
-    },
   ];
 
   const userMenuItems = [
@@ -160,11 +155,6 @@ const Profile = () => {
       label: "Contact Us",
       icon: <ContactMailIcon />,
       path: "/contact-us",
-    },
-    {
-      label: "Notifications",
-      icon: <NotificationsIcon />,
-      path: "/notifications",
     },
   ];
 

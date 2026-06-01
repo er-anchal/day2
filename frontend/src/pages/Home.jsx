@@ -632,11 +632,7 @@ const Home = () => {
                                       if (!isLoggedIn) {
                                         navigate("/register");
                                       } else {
-                                        navigate(
-                                          `/design/new?bg=${encodeURIComponent(
-                                            imageUrl,
-                                          )}&templateId=${template._id}`,
-                                        );
+                                        navigate(`/template-shots/${template._id}`);
                                       }
                                     }}
                                     sx={{

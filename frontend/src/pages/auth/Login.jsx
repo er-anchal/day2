@@ -33,16 +33,45 @@ const Login = () => {
         form,
       );
 
-      login(res.data.token, res.data.user.role);
+      const user = res.data.user;
+      const token = res.data.token;
 
-      // ADMIN
-      if (res.data.user.role === "ADMIN") {
-        navigate("/templates");
+      // Fetch dynamic modules and role access in parallel for instant redirection logic
+      const [resModules, resUserAccess, resRoleAccess] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_URL}/modules`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${import.meta.env.VITE_API_URL}/role-access/${user._id || user.id}`).catch(() => ({ data: null })),
+        axios.get(`${import.meta.env.VITE_API_URL}/role-access/role/${user.role}`).catch(() => ({ data: null }))
+      ]);
+
+      const allModules = resModules.data?.data || [];
+      let moduleAccess = [];
+      if (resUserAccess.data && resUserAccess.data.moduleAccess?.length > 0) {
+        moduleAccess = resUserAccess.data.moduleAccess;
+      } else if (resRoleAccess.data && resRoleAccess.data.moduleAccess) {
+        moduleAccess = resRoleAccess.data.moduleAccess;
       }
 
-      // USER
-      else {
-        navigate("/dashboard");
+      const allowedNames = moduleAccess
+        .filter((item) => item.permissions?.view)
+        .map((item) => item.moduleName.toLowerCase().trim());
+
+      const allowedPathsList = allModules
+        .filter((m) => allowedNames.includes(m.name.toLowerCase().trim()))
+        .map((m) => m.path?.trim())
+        .filter(Boolean);
+
+      // Perform auth login saving
+      login(token, user.role);
+
+      // Dynamic redirection
+      if (user.role === "SUPER ADMIN") {
+        navigate("/templates");
+      } else if (allowedPathsList.length > 0) {
+        // If they have dashboard access, prioritize /dashboard. Otherwise go to first allowed route
+        const preferredPath = allowedPathsList.find(p => p.toLowerCase() === "/dashboard") || allowedPathsList[0];
+        navigate(preferredPath);
+      } else {
+        navigate("/");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");

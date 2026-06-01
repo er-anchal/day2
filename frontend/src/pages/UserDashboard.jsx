@@ -67,11 +67,6 @@ export default function UserDashboard() {
       return;
     }
 
-    // ADMIN
-    if (role === "ADMIN") {
-      navigate("/admin");
-      return;
-    }
   }, [navigate]);
   const handleCreateReel = () => {
     navigate("/create-reel");
@@ -90,12 +85,11 @@ export default function UserDashboard() {
     const fetchTemplates = async () => {
       try {
         const token = localStorage.getItem("token");
-        // Yahan 'jewellery' aapki category ka slug hai (Database me jo slug ho wo daalein)
         const response = await axios.get(
-          "http://localhost:5000/api/templates/by-category/jewellery",
+          "http://localhost:5001/api/templates/disk-templates",
           {
             headers: {
-              Authorization: `Bearer ${token}`, // authMiddleware laga hai isliye token bhejna zaroori hai
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -123,19 +117,35 @@ export default function UserDashboard() {
     const formData = new FormData();
     formData.append("imageFile", file);
 
-    let folderName = tab === 1 ? "video_gen" : "theme_gen";
+    let endpoint = "http://localhost:5001/api/upload/image?folder=theme_gen";
+    if (tab === 1) {
+      endpoint = "http://localhost:5001/api/upload/scan-jewellery";
+    }
 
     try {
-      setUploadStatus((prev) => ({ ...prev, [tab]: "Uploading... ⏳" }));
+      setUploadStatus((prev) => ({ ...prev, [tab]: "Analyzing Image... 🧠" }));
 
+      const token = localStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:5000/api/upload/image?folder=${folderName}`,
+        endpoint,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } },
+        { 
+          headers: { 
+            "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${token}`
+          } 
+        },
       );
 
-      setUploadStatus((prev) => ({ ...prev, [tab]: "Upload Successful! 🎉" }));
-      setUploadedFilePath(response.data.localPath);
+      if (tab === 1 && response.data.detectedSubcategory) {
+        const detected = response.data.detectedSubcategory.name;
+        setSelectedSub(detected);
+        setUploadStatus((prev) => ({ ...prev, [tab]: `AI Detected: ${detected}! 💍` }));
+      } else {
+        setUploadStatus((prev) => ({ ...prev, [tab]: "Upload Successful! 🎉" }));
+      }
+
+      setUploadedFilePath(response.data.localPath || response.data.filePath);
 
       // Image Preview Set Karna
       setUploadedImages((prev) => ({
@@ -143,10 +153,10 @@ export default function UserDashboard() {
         [tab]: URL.createObjectURL(file),
       }));
 
-      console.log(`Saved at ${folderName}:`, response.data.localPath);
+      console.log(`Processed:`, response.data);
     } catch (error) {
       console.error("Upload Error:", error);
-      setUploadStatus((prev) => ({ ...prev, [tab]: "Upload failed! ❌" }));
+      setUploadStatus((prev) => ({ ...prev, [tab]: "Upload/Scan failed! ❌" }));
     } finally {
       event.target.value = null;
     }
@@ -373,7 +383,7 @@ export default function UserDashboard() {
               boxShadow: "none",
             }}
           >
-            <Grid container>
+            <Grid container sx={{ flexWrap: { xs: "wrap", md: "nowrap" } }}>
               {/* LEFT PANEL */}
 
               <Grid item xs={12} md={5}>
@@ -667,7 +677,7 @@ export default function UserDashboard() {
                     mb={3}
                     sx={{ overflowX: "auto", pb: 1 }}
                   >
-                    {["Rings", "Necklaces", "Earrings", "Bracelets"].map(
+                    {["Rings", "Pendants", "Bangles", "Articles"].map(
                       (item) => {
                         const isActive = selectedSub === item; // Check if this button is active
 
@@ -700,63 +710,79 @@ export default function UserDashboard() {
                   {/* TEMPLATE CARDS */}
 
                   <Grid container spacing={2}>
-                    {videoTemplates.length > 0 ? (
-                      videoTemplates.map((item, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={item._id}>
-                          <Paper
-                            sx={{
-                              bgcolor: cardColor,
-                              borderRadius: "18px",
-                              overflow: "hidden",
-                              border: "1px solid #e0e0e0",
-                              boxShadow: "none",
-                            }}
-                          >
-                            {/* VIDEO PLAYER BOX */}
-                            <Box
+                    {videoTemplates.filter(
+                      (t) =>
+                        t.subcategoryName &&
+                        t.subcategoryName.toLowerCase() === selectedSub.toLowerCase()
+                    ).length > 0 ? (
+                      videoTemplates
+                        .filter(
+                          (t) =>
+                            t.subcategoryName &&
+                            t.subcategoryName.toLowerCase() === selectedSub.toLowerCase()
+                        )
+                        .map((item, index) => (
+                          <Grid item xs={12} sm={6} md={4} key={item._id}>
+                            <Paper
                               sx={{
-                                height: 180,
-                                bgcolor: "#000", // Video border black achha lagta hai
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
+                                bgcolor: cardColor,
+                                borderRadius: "18px",
+                                overflow: "hidden",
+                                border: "1px solid #e0e0e0",
+                                boxShadow: "none",
                               }}
                             >
-                              <video
-                                width="100%"
-                                height="100%"
-                                controls // Play/Pause controls ke liye
-                                style={{ objectFit: "cover" }} // Box me fit karne ke liye
-                              >
-                                {/* Nayi Streaming API ka route */}
-                                <source
-                                  src={`http://localhost:5000/api/templates/stream/${item._id}`}
-                                  type="video/mp4"
-                                />
-                                Your browser does not support the video tag.
-                              </video>
-                            </Box>
-
-                            <Box p={2}>
-                              <Typography
+                              {/* VIDEO PLAYER BOX */}
+                              <Box
                                 sx={{
-                                  color: "#c68b45",
-                                  fontWeight: 700,
-                                  fontSize: "14px",
+                                  height: 250,
+                                  aspectRatio: "9/16",
+                                  bgcolor: "#000",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  overflow: "hidden",
+                                  mx: "auto",
                                 }}
                               >
-                                {item.subcategoryName
-                                  ? item.subcategoryName.toUpperCase()
-                                  : `TEMPLATE ${index + 1}`}
-                              </Typography>
-                            </Box>
-                          </Paper>
-                        </Grid>
-                      ))
+                                <video
+                                  width="100%"
+                                  height="100%"
+                                  autoPlay
+                                  loop
+                                  muted
+                                  playsInline
+                                  onTimeUpdate={(e) => {
+                                    if (e.target.currentTime >= 5) {
+                                      e.target.currentTime = 0;
+                                    }
+                                  }}
+                                  style={{ objectFit: "cover" }}
+                                  src={item.videoUrl ? item.videoUrl.replace("localhost:5000", "localhost:5001") : ""}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                              </Box>
+
+                              <Box p={2}>
+                                <Typography
+                                  sx={{
+                                    color: "#c68b45",
+                                    fontWeight: 700,
+                                    fontSize: "14px",
+                                  }}
+                                >
+                                  {item.subcategoryName
+                                    ? item.subcategoryName.toUpperCase()
+                                    : `TEMPLATE ${index + 1}`}
+                                </Typography>
+                              </Box>
+                            </Paper>
+                          </Grid>
+                        ))
                     ) : (
-                      // Agar API se koi template na mile toh ye dikhega
                       <Typography sx={{ p: 2, color: secondaryText, width: "100%", textAlign: "center", mt: 2 }}>
-                        No templates found for this category.
+                        No templates found for this subcategory.
                       </Typography>
                     )}
                   </Grid>

@@ -100,7 +100,14 @@ export const addSubtitles = async (req, res) => {
       const end = sub.endTime !== undefined ? sub.endTime : (sub.end !== undefined ? sub.end : start + 3);
       const safeText = sub.text.replace(/'/g, "\\'").replace(/:/g, "\\:");
       const fontfile = "C\\\\:/Windows/Fonts/arial.ttf";
-      return `drawtext=fontfile='${fontfile}':text='${safeText}':enable='between(t,${start},${end})':x=(w-text_w)/2:y=h-th-40:fontsize=48:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5`;
+      const fs = sub.fontSize || 48;
+      // Convert hex color to FFmpeg format (e.g. #ffffff -> white, or pass hex)
+      const hexToFfmpeg = (hex) => {
+        if (!hex || !hex.startsWith('#')) return 'white';
+        return `0x${hex.slice(1)}`;
+      };
+      const fontcolor = hexToFfmpeg(sub.color);
+      return `drawtext=fontfile='${fontfile}':text='${safeText}':enable='between(t,${start},${end})':x=(w-text_w)/2:y=h-th-40:fontsize=${fs}:fontcolor=${fontcolor}:box=1:boxcolor=black@0.5:boxborderw=5`;
     }).join(',');
 
     const command = `"${ffmpegPath}" -i "${inputPath}" -vf "${filters}" -c:v libx264 -preset fast -c:a aac "${outputPath}"`;
@@ -136,11 +143,13 @@ export const exportVideo = async (req, res) => {
 
   try {
     let filterString = "";
+    if (resolution === "480p") filterString = "-vf scale=-2:480";
     if (resolution === "720p") filterString = "-vf scale=-2:720";
     if (resolution === "1080p") filterString = "-vf scale=-2:1080";
 
     let crfValue = 23; 
     if (quality === "High") crfValue = 18;
+    if (quality === "Medium") crfValue = 23;
     if (quality === "Small File") crfValue = 28;
 
     let command = `"${ffmpegPath}" -i "${inputPath}"`;
@@ -183,6 +192,9 @@ export const mergeVideos = async (req, res) => {
     // Concat and re-encode to ensure compatibility
     const command = `"${ffmpegPath}" -f concat -safe 0 -i "${listPath}" -c:v libx264 -preset fast -c:a aac "${outputPath}"`;
     await execPromise(command);
+
+    // Clean up temp list file
+    try { fs.unlinkSync(listPath); } catch (_) {}
 
     res.json({ filename: outputFilename, path: relativePath });
   } catch (error) {

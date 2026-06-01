@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Slider, Stack } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Typography, Button, Slider, Stack, Tooltip } from '@mui/material';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 
 const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -10,14 +12,16 @@ const formatTime = (seconds) => {
 
 const CutVideoView = ({ videoRef, videoDuration, onCut, isLoading }) => {
   const [range, setRange] = useState([0, 10]);
-  const [hasSetInit, setHasSetInit] = useState(false);
+  // Track the last duration we initialised from — reset range whenever the video changes
+  const prevDurationRef = useRef(0);
 
   useEffect(() => {
-    if (videoDuration > 0 && !hasSetInit) {
+    if (videoDuration > 0 && Math.abs(videoDuration - prevDurationRef.current) > 0.5) {
+      // Duration changed meaningfully (new video loaded or undo/reset)
+      prevDurationRef.current = videoDuration;
       setRange([0, videoDuration]);
-      setHasSetInit(true);
     }
-  }, [videoDuration, hasSetInit]);
+  }, [videoDuration]);
 
   const handleChange = (event, newValue, activeThumb) => {
     if (!Array.isArray(newValue)) return;
@@ -50,14 +54,38 @@ const CutVideoView = ({ videoRef, videoDuration, onCut, isLoading }) => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" fontWeight="bold">Cut Video</Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => onCut(range[0], range[1])}
-          disabled={isLoading || duration <= 0.1 || duration === videoDuration}
-          sx={{ textTransform: 'none', borderRadius: 2 }}
-        >
-          Apply Cut
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Preview from start point">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SkipPreviousIcon />}
+              onClick={() => { if (videoRef?.current) { videoRef.current.currentTime = range[0]; videoRef.current.play(); } }}
+              sx={{ textTransform: 'none', borderRadius: 2 }}
+            >
+              Preview Start
+            </Button>
+          </Tooltip>
+          <Tooltip title="Preview from end point">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SkipNextIcon />}
+              onClick={() => { if (videoRef?.current) { videoRef.current.currentTime = Math.max(0, range[1] - 3); videoRef.current.play(); } }}
+              sx={{ textTransform: 'none', borderRadius: 2 }}
+            >
+              Preview End
+            </Button>
+          </Tooltip>
+          <Button 
+            variant="contained" 
+            onClick={() => onCut(range[0], range[1])}
+            disabled={isLoading || duration <= 0.1 || (Math.abs(range[0]) < 0.01 && Math.abs(range[1] - videoDuration) < 0.01)}
+            sx={{ textTransform: 'none', borderRadius: 2 }}
+          >
+            Apply Cut
+          </Button>
+        </Stack>
       </Stack>
       
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

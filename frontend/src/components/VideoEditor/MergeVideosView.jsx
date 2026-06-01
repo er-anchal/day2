@@ -30,7 +30,7 @@ const SortableItem = ({ id, file, onRemove }) => {
       {/* Video Thumbnail */}
       <Box sx={{ width: 64, height: 40, bgcolor: 'black', borderRadius: 1, overflow: 'hidden', flexShrink: 0, mr: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <video 
-          src={`http://localhost:5000/${file.path}#t=0.1`} 
+          src={`http://localhost:5001/${file.path}#t=0.1`} 
           style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
           muted 
           playsInline
@@ -77,7 +77,7 @@ const MergeVideosView = ({ onMerge, isLoading }) => {
     }
     
     try {
-      const res = await axios.post('http://localhost:5000/api/video/upload-multiple', formData);
+      const res = await axios.post('http://localhost:5001/api/video/upload-multiple', formData);
       const uploadedFiles = res.data.files.map((f, idx) => ({ ...f, id: `file-${Date.now()}-${idx}` }));
       setVideos(prev => [...prev, ...uploadedFiles]);
     } catch (err) {

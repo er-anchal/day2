@@ -9,6 +9,33 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    companyName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    designation: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    industry: {
+      type: String,
+      enum: [
+        "",
+        "JEWELLERY",
+        "FASHION",
+        "REAL ESTATE",
+        "EDUCATION",
+        "HEALTHCARE",
+      ],
+      default: "",
+    },
+
+    dob: {
+      type: Date,
+      default: null,
+    },
 
     phone: {
       type: String,
@@ -18,7 +45,12 @@ const UserSchema = new mongoose.Schema(
       match: [/^[0-9]{10}$/, "Phone number must be exactly 10 digits"],
       index: true,
     },
-
+    alternatePhone: {
+      type: String,
+      trim: true,
+      default: "",
+      match: [/^$|^[0-9]{10}$/, "Alternate phone must be 10 digits"],
+    },
     email: {
       type: String,
       required: true,
@@ -35,26 +67,89 @@ const UserSchema = new mongoose.Schema(
       select: false, // security best practice
     },
 
-    dob: {
-      type: Date,
-      default: null,
-    },
-
     avatar: {
       type: String, // profile image URL
       default: "",
     },
 
+    // ───────────── Address Info  ─────────────
+    address: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    city: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    country: {
+      type: String,
+      trim: true,
+      default: "India",
+    },
+    pincode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    // ───────────── Business Details ─────────────
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "",
+    },
+    panNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "",
+    },
     // ───────────── Role & Status ─────────────
     role: {
       type: String,
       enum: ["SUPER ADMIN", "ADMIN", "USER", "CLIENT"],
-      default: "USER",
+      default: "",
     },
 
     isActive: {
-      type: Boolean,
-      default: true,
+      type: String,
+      default: 0, // 0 = active, 1 = deleted/inactive
+      index: true,
+    },
+
+    // ───────────── Subscription ─────────────
+    plan: {
+      type: String,
+      enum: ["FREE", "PRO", "ENTERPRISE"],
+      default: "FREE",
+    },
+
+    planExpiry: {
+      type: Date,
+      default: null,
+    },
+
+    // ───────────── Image Usage Tracking ─────────────
+    usage: {
+      imagesEdited: {
+        type: Number,
+        default: 0,
+      },
+      imagesUploaded: {
+        type: Number,
+        default: 0,
+      },
+      storageUsedMB: {
+        type: Number,
+        default: 0,
+      },
     },
 
     // ───────────── Editor Preferences ─────────────

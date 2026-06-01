@@ -18,6 +18,10 @@ const templateCategorySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    sortOrder: {
+      type: Number,
+      default: 0,
+    },
     deletedAt: Date,
   },
   { timestamps: true },
